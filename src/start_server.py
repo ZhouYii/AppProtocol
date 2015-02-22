@@ -1,8 +1,8 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
-from database import * 
+from db.database import * 
 #from src.serveractions import register, login
-from util import *
+from tools.util import *
 
 class IphoneChat(Protocol):
     def __init__(self) :
