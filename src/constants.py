@@ -1,0 +1,1 @@
+MIN_PHONE_LEN = 10
