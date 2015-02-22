@@ -21,3 +21,16 @@ def protoc_validate_login(phone_num_str, password_str) :
         print "Input Invalid"
         return False
     return True
+
+def split_opcode(string, separator=":") :
+    '''
+        Splits the string into opcode-message pair. Assumes the separator exists in the string, otherwise the client-side message sending process fucked up.
+    '''
+    split_idx = string.find(separator)
+    opcode = string[:split_idx]
+    if split_idx == len(string) - 1 :
+        return opcode, ""
+    return opcode, string[split_idx+1:]
+
+def first_split(string, separator) :
+    return split_opcode(string, separator)

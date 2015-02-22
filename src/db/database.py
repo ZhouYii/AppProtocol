@@ -50,6 +50,23 @@ def login_authenticate(handle, phone_number, password) :
         return True
     return False
 
+def add_friend(handle, userid1, userid2) :
+    '''
+        Should this be directed or undirected?
+
+        This function should not check for referential integrity inthe database because the assumption is the user pair are valid users. Otherwise, the client should not be able to view the userid2 profile. userid1 is known to exist because we have authenticated login
+    '''
+    prepared = handle.prepare("""
+        INSERT INTO friend (userid1, userid2)
+        VALUES (?, ?)
+        """)
+    handle.execute(prepared, [userid1, userid2])
+
+
+
 if __name__ == "__main__" :
     handle = init_session()
+    insert_user_into_database(handle, 6505758648, "password")
     insert_user_into_database(handle, 6505758649, "password")
+    add_friend(handle, 6505758649, 6505758648)
+    
