@@ -1,4 +1,5 @@
 from constants import *
+import datetime
 
 def split_login_string(string) :
     split_index = string.find(';')
@@ -34,3 +35,14 @@ def split_opcode(string, separator=":") :
 
 def first_split(string, separator) :
     return split_opcode(string, separator)
+
+'''
+Time Functions take input datetime.datetime.now()
+'''
+def unix_time(dt):
+        epoch = datetime.datetime.utcfromtimestamp(0)
+        delta = dt - epoch
+        return delta.total_seconds()
+
+def unix_time_millis(dt):
+    return long(unix_time(dt) * 1000.0)
