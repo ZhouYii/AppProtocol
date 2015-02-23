@@ -4,6 +4,10 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from tools.util import unix_time_millis
 import datetime
 
+'''
+    Database interfaces for functionality
+''' 
+
 def init_session(keyspace="social") :
     ''' 
     Start a connection into cassandra database
@@ -12,6 +16,20 @@ def init_session(keyspace="social") :
     handle = cluster.connect("social")
     return handle
 
+def db_core_get_subscribers(handle, userid) :
+    query = "SELECT * FROM friend WHERE userid1=" + str(userid) + ";"
+    prepared = handle.prepare(query)
+    rows = handle.execute(prepared)
+    initial_list = set([list(r)[1] for r in rows])
+    initial_list.add(userid)
+
+    query = "SELECT * FROM blacklist WHERE userid1=" + str(userid) + ";"
+    prepared = handle.prepare(query)
+    rows = handle.execute(prepared)
+    blacklisted = set([list(r)[1] for r in rows])
+
+    return initial_list - blacklisted
+    
 
 def insert_user_into_database(handle, phone_number, password) :
     '''
@@ -66,14 +84,14 @@ def add_friend(handle, userid1, userid2) :
         """)
     handle.execute(prepared, [userid1, userid2])
 
-def db_status_insert(time, userid, body) :
+def db_newsfeed_new_post(handle, time, userid, body) :
     prepared = handle.prepare("""
         INSERT INTO newsfeed_posts (post_id, author_id, body) 
         VALUES (?, ?, ?)
         """)
     handle.execute(prepared, [time, userid, body])
 
-def db_timeline_insert(owner_id, post_uuid, author_id, body) :
+def db_newsfeed_timeline_insert(handle, owner_id, post_uuid, author_id, body) :
     '''
         Ownerid is the user id of the account which owns the timeline
     '''
@@ -83,7 +101,7 @@ def db_timeline_insert(owner_id, post_uuid, author_id, body) :
         """)
     handle.execute(prepared, [owner_id, post_uuid, author_id, body])
 
-def db_get_newsfeed(user_id) :
+def db_newsfeed_get_user_newsfeed(handle, user_id) :
     query = "SELECT * FROM  newsfeed_timeline WHERE user_id= "
     query += str(user_id)
     query += " ORDER BY post_id DESC;"
@@ -95,10 +113,10 @@ def db_get_newsfeed(user_id) :
 
 
 
-
 if __name__ == "__main__" :
     from uuid import uuid4
     handle = init_session()
+    import newsfeed.newsfeed as nf
     '''
     insert_user_into_database(handle, 6505758648, "password")
     insert_user_into_database(handle, 6505758649, "password")
@@ -110,4 +128,6 @@ if __name__ == "__main__" :
     db_status_insert(time, 6505758649, "new hello")
     db_timeline_insert(6505758649, time, 6505758649, "new hello")
     '''
-    print db_get_newsfeed(6505758649)
+    #print db_newsfeed_get_user_newsfeed(6505758649)
+    nf.new_status_update(handle, 6505758649, "full ver2")
+    print db_newsfeed_get_user_newsfeed(handle, 123456)

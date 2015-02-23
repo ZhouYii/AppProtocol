@@ -3,6 +3,7 @@ from twisted.internet import reactor
 from db.database import * 
 #from src.serveractions import register, login
 from tools.util import *
+import newsfeed.newsfeed as nf
 
 class IphoneChat(Protocol):
     def __init__(self) :
@@ -32,8 +33,8 @@ class IphoneChat(Protocol):
 
         elif opcode == "newstatus" :
             userid, content = first_split(message, "#")
-            # update in database
-            # multicast
+            # delegate to newsfeed lib.
+            nf.new_status_update(self.db_handle, user_id, content)
 
         elif opcode == "addfriend" :
             id1,id2 = [long(x) for x in data.split('#')]
