@@ -39,6 +39,10 @@ class IphoneChat(Protocol):
         elif opcode == "addfriend" :
             id1,id2 = [long(x) for x in data.split('#')]
 
+        elif opcode == "img" :
+            print type(message)
+            print message
+
         elif opcode == "log" :
             phone_num, password = split_login_string(message)
 

@@ -111,7 +111,10 @@ def db_newsfeed_get_user_newsfeed(handle, user_id) :
     # To standard python collection + truncate userid
     return [ list(r)[1:] for r in rows]
 
-
+def db_insert_image(handle, key, bytestring) :
+    query = "INSERT INTO images (id_key, bytes) VALUES (?, ?)"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [key, bytestring])
 
 if __name__ == "__main__" :
     from uuid import uuid4
@@ -128,6 +131,16 @@ if __name__ == "__main__" :
     db_status_insert(time, 6505758649, "new hello")
     db_timeline_insert(6505758649, time, 6505758649, "new hello")
     '''
+    '''
     #print db_newsfeed_get_user_newsfeed(6505758649)
     nf.new_status_update(handle, 6505758649, "full ver2")
     print db_newsfeed_get_user_newsfeed(handle, 123456)
+    '''
+
+    #image uuid
+    img_id = uuid4()
+    jpeg = open("img.jpg", "rb")
+    jpeg_bytes = jpeg.read()
+    out = open("out1.jpg", "wb")
+    out.write(jpeg_bytes)
+    db_insert_image(handle, img_id, jpeg_bytes)
