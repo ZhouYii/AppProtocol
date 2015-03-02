@@ -141,6 +141,6 @@ if __name__ == "__main__" :
     img_id = uuid4()
     jpeg = open("img.jpg", "rb")
     jpeg_bytes = jpeg.read()
-    out = open("out1.jpg", "wb")
+    out = open("tmp/out1.jpg", "wb")
     out.write(jpeg_bytes)
     db_insert_image(handle, img_id, jpeg_bytes)
