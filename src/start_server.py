@@ -4,6 +4,7 @@ from db.database import *
 #from src.serveractions import register, login
 from tools.util import *
 import newsfeed.newsfeed as nf
+import json
 
 class IphoneChat(Protocol):
     def __init__(self) :
@@ -32,16 +33,44 @@ class IphoneChat(Protocol):
             msg = self.name + " has joined"
 
         elif opcode == "newstatus" :
+            '''
+                Assumes message is json-formatted with the following fields :
+                id : phone number identifying the user who posted the status
+                body : text body
+                photos (optional) : sequence of bytes representing a photo
+            '''
+            content = json.load(message)
+            phone_num = content["id"]
+            text = content["body"]
+            if content.has_key("photo") :
+                photo = content["photo"]
+            else :
+                photo = 0
+            new_status_update(self.db_handle, user_id, content, photo)
+
+        elif opcode == "pollnews" :
+            # pollnews:userid (phone number)
+            phonenum = int(msg)
+            json = get_user_timeline(self.db_handle, phonenum)
+            self.message(json)
+
+        '''
+        elif opcode == "newstatus" :
             userid, content = first_split(message, "#")
             # delegate to newsfeed lib.
             nf.new_status_update(self.db_handle, user_id, content)
+        '''
 
         elif opcode == "addfriend" :
             id1,id2 = [long(x) for x in data.split('#')]
 
         elif opcode == "img" :
             print type(message)
+            key, bytestring = split_opcode(message)
             print message
+            # todo delete 
+            output = open("recv.jpg", "wb")
+            output.write(bytestring)
 
         elif opcode == "log" :
             phone_num, password = split_login_string(message)

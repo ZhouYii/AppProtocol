@@ -84,25 +84,30 @@ def add_friend(handle, userid1, userid2) :
         """)
     handle.execute(prepared, [userid1, userid2])
 
-def db_newsfeed_new_post(handle, time, userid, body) :
+def db_newsfeed_new_post(handle, time, userid, body, photo=None) :
+    if photo == None :
+        photo = 0
     prepared = handle.prepare("""
-        INSERT INTO newsfeed_posts (post_id, author_id, body) 
-        VALUES (?, ?, ?)
+        INSERT INTO newsfeed_postsv2 (post_id, author_id, body, photo) 
+        VALUES (?, ?, ?, ?)
         """)
-    handle.execute(prepared, [time, userid, body])
+    handle.execute(prepared, [time, userid, body, photo])
 
-def db_newsfeed_timeline_insert(handle, owner_id, post_uuid, author_id, body) :
+
+def db_newsfeed_timeline_insert(handle, owner_id, post_uuid, author_id, body, photo=None) :
     '''
         Ownerid is the user id of the account which owns the timeline
     '''
+    if photo == None :
+        photo = 0
     prepared = handle.prepare("""
-        INSERT INTO newsfeed_timeline (user_id, post_id, author, body) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO newsfeed_timelinev2 (user_id, post_id, author, body, photo) 
+        VALUES (?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [owner_id, post_uuid, author_id, body])
+    handle.execute(prepared, [owner_id, post_uuid, author_id, body, photo])
 
 def db_newsfeed_get_user_newsfeed(handle, user_id) :
-    query = "SELECT * FROM  newsfeed_timeline WHERE user_id= "
+    query = "SELECT * FROM  newsfeed_timelinev2 WHERE user_id= "
     query += str(user_id)
     query += " ORDER BY post_id DESC;"
     prepared = handle.prepare(query)
@@ -120,8 +125,9 @@ if __name__ == "__main__" :
     from uuid import uuid4
     handle = init_session()
     import newsfeed.newsfeed as nf
+
+    insert_user_into_database(handle, 2174180160, "abc")
     '''
-    insert_user_into_database(handle, 6505758648, "password")
     insert_user_into_database(handle, 6505758649, "password")
     add_friend(handle, 6505758649, 6505758648)
     '''
@@ -136,11 +142,36 @@ if __name__ == "__main__" :
     nf.new_status_update(handle, 6505758649, "full ver2")
     print db_newsfeed_get_user_newsfeed(handle, 123456)
     '''
-
+    '''
     #image uuid
     img_id = uuid4()
     jpeg = open("img.jpg", "rb")
     jpeg_bytes = jpeg.read()
-    out = open("tmp/out1.jpg", "wb")
-    out.write(jpeg_bytes)
-    db_insert_image(handle, img_id, jpeg_bytes)
+    #out = open("tmp/out1.jpg", "wb")
+    #out.write(jpeg_bytes)
+    #nf.new_status_update(handle, 6505758649, "new  body1", jpeg_bytes)
+    #nf.new_status_update(handle, 6505758649, "new body2")
+    x = db_newsfeed_get_user_newsfeed(handle, 6505758649)
+    img_index = 0
+    for entry in x :
+        if nf.cql_photo(entry) == None :
+            print entry
+        else :
+            out = open("tmp/out"+str(img_index)+".jpg", "wb")
+            out.write(nf.cql_photo(entry))
+            out.close()
+            img_index += 1
+    '''
+    import json
+    import base64
+    json_string = nf.get_user_timeline(handle, 6505758649)
+    test_jpg = None
+    json_obj = json.loads(json_string)
+    for i in json_obj["items"] :
+        post_obj = json.loads(i)
+        if post_obj.has_key("photo") :
+            test_jpg = post_obj["photo"]
+            break
+    out = open("tmp/jsondecode.jpg", "wb")
+    out.write(base64.b64decode(test_jpg))
+    out.close()

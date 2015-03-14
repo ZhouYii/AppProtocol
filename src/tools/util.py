@@ -1,4 +1,5 @@
 from constants import *
+import json
 import datetime
 
 def split_login_string(string) :
@@ -46,3 +47,6 @@ def unix_time(dt):
 
 def unix_time_millis(dt):
     return long(unix_time(dt) * 1000.0)
+
+def to_json(dictionary) :
+    return json.dumps(dictionary , separators=(',',':'))
