@@ -31,8 +31,17 @@ def get_user_timeline(handle,userid) :
     '''
     posts = db.db_newsfeed_get_user_newsfeed(handle, userid)
     json_obj = dict()
-    json_obj["items"] = map(cql_to_json_single, posts)
-    return to_json(json_obj)
+    #json_obj["items"] = map(cql_to_json_single, posts)
+    '''
+        Avoid using to_json because we do not want to do double encoding
+    '''
+    json_items =  map(cql_to_json_single, posts)
+    json_string = '{ "items" : ['
+    for item in json_items :
+        json_string += item
+    json_string += json_items[len(json_items) - 1]
+    json_string += ']}'
+    return json_string
 
 # CQL parsing interfaces
 def cql_photo(post) :

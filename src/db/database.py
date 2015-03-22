@@ -83,15 +83,20 @@ def add_friend(handle, userid1, userid2) :
         VALUES (?, ?)
         """)
     handle.execute(prepared, [userid1, userid2])
+    return 0
 
 def db_newsfeed_new_post(handle, time, userid, body, photo=None) :
+    print "ARGS|"
+    print "time:"+str(time)
+    print "userid:"+str(userid)
+    print "body:"+str(body)
     if photo == None :
         photo = 0
     prepared = handle.prepare("""
         INSERT INTO newsfeed_postsv2 (post_id, author_id, body, photo) 
         VALUES (?, ?, ?, ?)
         """)
-    handle.execute(prepared, [time, userid, body, photo])
+    return handle.execute(prepared, [time, userid, body, photo])
 
 
 def db_newsfeed_timeline_insert(handle, owner_id, post_uuid, author_id, body, photo=None) :
@@ -104,7 +109,9 @@ def db_newsfeed_timeline_insert(handle, owner_id, post_uuid, author_id, body, ph
         INSERT INTO newsfeed_timelinev2 (user_id, post_id, author, body, photo) 
         VALUES (?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [owner_id, post_uuid, author_id, body, photo])
+    result = handle.execute(prepared, [owner_id, post_uuid, author_id, body, photo])
+    print result
+    return result
 
 def db_newsfeed_get_user_newsfeed(handle, user_id) :
     query = "SELECT * FROM  newsfeed_timelinev2 WHERE user_id= "
@@ -142,7 +149,6 @@ if __name__ == "__main__" :
     nf.new_status_update(handle, 6505758649, "full ver2")
     print db_newsfeed_get_user_newsfeed(handle, 123456)
     '''
-    '''
     #image uuid
     img_id = uuid4()
     jpeg = open("img.jpg", "rb")
@@ -150,7 +156,7 @@ if __name__ == "__main__" :
     #out = open("tmp/out1.jpg", "wb")
     #out.write(jpeg_bytes)
     #nf.new_status_update(handle, 6505758649, "new  body1", jpeg_bytes)
-    #nf.new_status_update(handle, 6505758649, "new body2")
+    nf.new_status_update(handle, 6505758649, "new body3")
     x = db_newsfeed_get_user_newsfeed(handle, 6505758649)
     img_index = 0
     for entry in x :
@@ -174,4 +180,6 @@ if __name__ == "__main__" :
             break
     out = open("tmp/jsondecode.jpg", "wb")
     out.write(base64.b64decode(test_jpg))
+
     out.close()
+    '''

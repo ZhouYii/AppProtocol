@@ -1,6 +1,25 @@
-from constants import *
 import json
 import datetime
+from apns import APNs, Frame, Payload
+import time
+
+#
+## Monkey Patch for SSL
+## Changes PROTOCOL_SSLv23 to PROTOCOL_TLSv1
+#
+import ssl
+from functools import wraps
+def sslwrap(func):
+    @wraps(func)
+    def bar(*args, **kw):
+        kw['ssl_version'] = ssl.PROTOCOL_TLSv1
+        return func(*args, **kw)
+    return bar
+
+ssl.wrap_socket = sslwrap(ssl.wrap_socket)
+#
+##
+#
 
 def split_login_string(string) :
     split_index = string.find(';')
@@ -19,10 +38,20 @@ def protoc_validate_login(phone_num_str, password_str) :
         The phone number string must be a long as the minimun length of 
         phone number.
     '''
-    if len(phone_num_str) == 0 or len(password_str) == 0 :
+    if len(password_str) == 0 :
         print "Input Invalid"
         return False
     return True
+
+def first_split(string, separator) :
+    '''
+        Split the string into two substrings, at the first occurrence of the separator character
+    '''
+    split_idx = string.find(separator)
+    opcode = string[:split_idx]
+    if split_idx == len(string) - 1 :
+        return opcode, ""
+    return opcode, string[split_idx+1:]
 
 def split_opcode(string, separator=":") :
     '''
@@ -50,3 +79,27 @@ def unix_time_millis(dt):
 
 def to_json(dictionary) :
     return json.dumps(dictionary , separators=(',',':'))
+
+
+def send_push_notification(message,
+                           sound_type = "default",
+                           cert_file_path = '/home/ubuntu/pemfiles/cert.pem', 
+                           key_file_path = '/home/ubuntu/pemfiles/comb.pem') :
+
+    apns = APNs(use_sandbox=True, 
+                cert_file = cert_file_path)
+                #key_file=key_file_path)
+
+    # Dummy hex
+    token_hex = '7ffdd1583899067942754f9afe2a575aa64f5ab3147834b9250a837f538f3097'
+    payload = Payload(alert=message, sound=sound_type, badge=1)
+    apns.gateway_server.send_notification(token_hex, payload)
+    frame = Frame()
+    identifier = 1
+    expiry = time.time()+3600
+    priority = 10
+    frame.add_item(token_hex, payload, identifier, expiry, priority)
+    apns.gateway_server.send_notification_multiple(frame)
+
+if __name__ == '__main__' :
+    send_push_notification("successful push")
