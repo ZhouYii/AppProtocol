@@ -2,3 +2,4 @@
 config file : sudo vim /etc/ejabberd/ejabberd.cfg
 restart server : sudo /etc/init.d/ejabberd restart
 manual-add-user : sudo ejabberdctl register username 54.69.204.42 'password'
+the admin user is beyonce
