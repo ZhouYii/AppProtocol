@@ -1,17 +1,89 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
-from db.database import * 
+#from db.database import *
 #from src.serveractions import register, login
-from tools.util import *
-import newsfeed.newsfeed as nf
-import json
+from tools.util import split_opcode, event_print_helper
+import events.events as ev
 
 def perform_routing(server_handle, db_handle, data) :
+    import json
+    print "data: " + data
     opcode, message = split_opcode(data)
     print "opcode " + str(opcode) + " msg: " + str(message)
     if opcode == "iam":
         server_handle.name = message
         msg = server_handle.name + " has joined"
+
+    elif opcode == "addfriend" :
+        id1,id2 = [int(x) for x in message.split('#')]
+        # 0 for success 1 for fail
+        success = add_friend(db_handle, id1, id2)
+        server_handle.message(str(success))
+
+    elif opcode == "getfriends" :
+        id = int(message)
+        friends_list = getfriends(id)
+
+    elif opcode == "eventreject" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") and dat.has_key("event_id") :
+            ev.event_reject(handle, dat["user_id"], dat["event_id"])
+            server_handle.message(str(1))
+
+    elif opcode == "eventaccept" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") and dat.has_key("event_id") :
+            ev.event_accept(handle, dat["user_id"], dat["event_id"])
+            server_handle.message(str(1))
+
+    elif opcode == "eventinvite" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") and dat.has_key("event_id") :
+            ev.event_invite(handle, dat["user_id"], dat["event_id"])
+            server_handle.message(str(1))
+
+    elif opcode == "newevent" :
+        dat = json.loads(str(message))
+        # Check if json fields are present :
+        # host_id, location, time, title
+        if dat.has_key("host_id") and dat.has_key("location") and \
+            dat.has_key("title") and dat.has_key("time") :
+                host = dat["host_id"]
+                location = dat["location"]
+                title = dat["title"]
+                time = dat["time"]
+                if dat.has_key("invite_list") :
+                    invite_list = dat["invite_list"]
+                    event_id = ev.create_event(db_handle, host, location, 
+                                           title, time, invite_list)
+                else :
+                    event_id = ev.create_event(db_handle, host, location, 
+                                            title, time)
+                    server_handle.message(str(event_id))
+
+    elif opcode == "pollinvited" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") :
+            user_id = dat["user_id"]
+            if dat.has_key("start_offset") and dat.has_key("amount") :
+                events = ev.poll_invited_events(handle, user_id,
+                                        dat["start_offset"], 
+                                        dat["amount"])
+            else :
+                events =  ev.poll_invited_events(handle, user_id)
+            server_handle.message(event_print_helper(events))
+
+    elif opcode == "pollaccepted" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") :
+            user_id = dat["user_id"]
+            if dat.has_key("start_offset") and dat.has_key("amount") :
+                events = ev.poll_accepted_events(handle, user_id,
+                                        dat["start_offset"], 
+                                        dat["amount"])
+            else :
+                events = ev.poll_accepted_events(handle, user_id)
+            server_handle.message(event_print_helper(events))
 
     elif opcode == "newstatus" :
         '''
@@ -20,24 +92,16 @@ def perform_routing(server_handle, db_handle, data) :
             body : text body
             photos (optional) : sequence of bytes representing a photo
         '''
-        print len(message)
         import json
-        content = json.loads(message)
-        print "content" + str(content)
+        content = json.loads(str(message))
 
         phone_num = int(content["id"])
         text = content["body"]
         if content.has_key("photo") :
             photo = content["photo"]
-            out = open("bytes.jpg", "wb")
-            out.write(photo)
-            out.flush()
-            out.close()
         else :
             photo = 0
 
-        print phone_num
-        print text
         print nf.new_status_update(db_handle, phone_num, text, photo)
 
     elif opcode == "pollnews" :
@@ -53,19 +117,6 @@ def perform_routing(server_handle, db_handle, data) :
         # delegate to newsfeed lib.
         nf.new_status_update(self.db_handle, user_id, content)
         '''
-
-    elif opcode == "addfriend" :
-        id1,id2 = [int(x) for x in message.split('#')]
-        # 0 for success 1 for fail
-        success = add_friend(db_handle, id1, id2)
-        server_handle.message(str(success))
-
-    elif opcode == "getfriends" :
-        id = int(message)
-        friends_list = getfriends(id)
-        
-
-
     elif opcode == "putprofimg" :
         '''
             op:phonenumber#<bytes of img>
@@ -128,3 +179,35 @@ def perform_routing(server_handle, db_handle, data) :
     for c in self.factory.clients:
         c.message(msg)
     '''
+if __name__ == "__main__" :
+    class ServerStub:
+        def message(self, string):
+            print("server says:" + string)
+
+    def TimestampMillisec64():
+        return int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
+
+    from db.database import * 
+    import uuid as uuid_
+    import json as json_
+    handle = init_session()
+    server = ServerStub()
+
+    # create new event json message
+    '''
+    msg = dict()
+    msg["time"] = TimestampMillisec64()
+    msg["location"] = "loc"
+    msg["title"] = "title"
+    msg["host_id"] = 6505758649
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "newevent:"+json_msg)
+    '''
+    msg = dict()
+    msg["user_id"] = 6505758648
+    msg["offset"] = 0
+    msg["amount"] = 20
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    perform_routing(server, handle, "pollinvited:" + json_msg)
+    

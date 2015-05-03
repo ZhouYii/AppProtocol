@@ -101,5 +101,34 @@ def send_push_notification(message,
     frame.add_item(token_hex, payload, identifier, expiry, priority)
     apns.gateway_server.send_notification_multiple(frame)
 
+# for polling event list, a list of event tuples are retrieved frm the database
+# # userid, eventid, location, start-time, title
+# Creates the json string for server to send
+def event_print_helper(event_tuples) :
+    def event_to_dict(event_tuple) :
+        user_id, event_id, loc, time, title = event_tuple
+        d = dict()
+        d["event_id"] = str(event_id)
+        d["location"] = str(loc)
+        d["time"] = tuple([time.year, time.month, time.day, time.hour, time.minute])
+        d["title"] = str(title)
+        return d
+        
+    def event_to_string(event_tuple) :
+        user_id, event_id, loc, time, title = event_tuple
+        s = ""
+        s += str(user_id) + "##"
+        s += str(event_id) + "##"
+        s += str(loc) + "##"
+        s += str(time) + "##"
+        s += str(title)
+        return s
+
+    #event_strings = [ event_to_string(t) for t in event_tuples]
+    event_dicts = [event_to_dict(t) for t in event_tuples]
+    d = dict()
+    d["events"] = event_dicts
+    return json.dumps(d, separators=(',',':'))
+
 if __name__ == '__main__' :
     send_push_notification("successful push")

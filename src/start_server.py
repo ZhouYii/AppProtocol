@@ -3,7 +3,6 @@ from twisted.internet import reactor
 
 from db.database import * 
 from tools.util import *
-import newsfeed.newsfeed as nf
 from routing import perform_routing
 
 import json
