@@ -12,7 +12,7 @@ def init_session(keyspace="social") :
     ''' 
     Start a connection into cassandra database
     '''
-    cluster = Cluster()
+    cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
     handle = cluster.connect("social")
     return handle
 
@@ -120,7 +120,7 @@ def insert_user_into_database(handle, phone_number, gender, nickname, password) 
     Commit a user/password pair into the database
     ''' 
     prepared = handle.prepare("""
-        INSERT INTO user (phone_number, is_male, nickname, password)
+        INSERT INTO social.user (phone_number, is_male, nickname, password)
         VALUES (?, ?, ?, ?)
         """)
     handle.execute(prepared, [phone_number, gender, nickname, password])
