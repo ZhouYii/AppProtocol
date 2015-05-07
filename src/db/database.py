@@ -123,7 +123,11 @@ def insert_user_into_database(handle, phone_number, gender, nickname, password) 
         INSERT INTO social.user (phone_number, is_male, nickname, password)
         VALUES (?, ?, ?, ?)
         """)
-    handle.execute(prepared, [phone_number, gender, nickname, password])
+    handle.execute(prepared, [int(phone_number), bool(gender), str(nickname), str(password)])
+    print phone_number
+    print gender
+    print nickname
+    print password
 
 def check_phonenumber_taken(handle, phone_number) :
     '''

@@ -16,7 +16,7 @@ def perform_routing(server_handle, db_handle, data) :
         #phone_num, password = split_login_string(message)
         dat = json.loads(str(message))
         if dat.has_key("gender") and dat.has_key("phone_num") \
-            and dat.has_key("nick") and dat.has_key("pass-hash") :
+            and dat.has_key("nick") and dat.has_key("pass_hash") :
                 phone_num = dat["phone_num"]
                 password = dat["pass_hash"]
                 if dat["gender"] == "M" :
@@ -25,16 +25,10 @@ def perform_routing(server_handle, db_handle, data) :
                     gender = False
                 nick = dat["nick"]
 
-                # validate input from phone 
-                if protoc_validate_login(phone_num, password) == False  :
-                    server_handle.message("0")
-                    return
-
-                phone_num = sanitize_phone_number(phone_num)
+                #phone_num = sanitize_phone_number(phone_num)
                 if check_phonenumber_taken(db_handle, phone_num) == True :
-                    server_handle.message_phone_number_exists()
+                    server_handle.message(str(0))
                     return
-
                 insert_user_into_database(db_handle,
                                           phone_num,
                                           gender,
@@ -228,5 +222,5 @@ if __name__ == "__main__" :
     msg["pass_hash"] = "password"
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
-    perform_routing(server, handle, "newevent:"+json_msg)
+    perform_routing(server, handle, "reg:"+json_msg)
     
