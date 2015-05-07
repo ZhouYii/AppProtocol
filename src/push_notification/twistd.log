@@ -1,0 +1,5 @@
+2015-03-28 12:07:28-0500 [-] Log opened.
+2015-03-28 12:07:28-0500 [-] twistd 12.2.0 (/System/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python 2.7.5) starting up.
+2015-03-28 12:07:28-0500 [-] reactor class: twisted.internet.selectreactor.SelectReactor.
+2015-03-28 12:07:28-0500 [-] Site starting on 7077
+2015-03-28 12:07:28-0500 [-] Starting factory <twisted.web.server.Site instance at 0x1076ccf80>
