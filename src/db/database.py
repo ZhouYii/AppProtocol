@@ -107,19 +107,23 @@ def get_user_events_accepted(handle, userid) :
     # build event tuple
     # userid, eventid, location, start-time, title
     return [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
-    
-#converted
-# NEW USER
-def insert_user_into_database(handle, phone_number, password) :
+
+'''
+Add a new user
+phone_number -> user id phone number
+gender -> true if male, false is female
+nickname -> string, for nickname
+password -> a hash
+'''
+def insert_user_into_database(handle, phone_number, gender, nickname, password) :
     '''
     Commit a user/password pair into the database
     ''' 
     prepared = handle.prepare("""
-        INSERT INTO user (phone_number, password)
-        VALUES (?, ?)
+        INSERT INTO user (phone_number, is_male, nickname, password)
+        VALUES (?, ?, ?, ?)
         """)
-    handle.execute(prepared, [phone_number, password])
-    
+    handle.execute(prepared, [phone_number, gender, nickname, password])
 
 def check_phonenumber_taken(handle, phone_number) :
     '''

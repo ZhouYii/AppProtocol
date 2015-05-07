@@ -10,9 +10,39 @@ def perform_routing(server_handle, db_handle, data) :
     print "data: " + data
     opcode, message = split_opcode(data)
     print "opcode " + str(opcode) + " msg: " + str(message)
-    if opcode == "iam":
-        server_handle.name = message
-        msg = server_handle.name + " has joined"
+
+    if opcode == "reg" :
+        # INPUT : gender phone-num nickname password-hash
+        #phone_num, password = split_login_string(message)
+        dat = json.loads(str(message))
+        if dat.has_key("gender") and dat.has_key("phone_num") \
+            and dat.has_key("nick") and dat.has_key("pass-hash") :
+                phone_num = dat["phone_num"]
+                password = dat["pass_hash"]
+                if dat["gender"] == "M" :
+                    gender = True
+                else :
+                    gender = False
+                nick = dat["nick"]
+
+                # validate input from phone 
+                if protoc_validate_login(phone_num, password) == False  :
+                    server_handle.message("0")
+                    return
+
+                phone_num = sanitize_phone_number(phone_num)
+                if check_phonenumber_taken(db_handle, phone_num) == True :
+                    server_handle.message_phone_number_exists()
+                    return
+
+                insert_user_into_database(db_handle,
+                                          phone_num,
+                                          gender,
+                                          nick,
+                                          password)
+                server_handle.message("1")
+        else :
+            server_handle.message("0")
 
     elif opcode == "addfriend" :
         id1,id2 = [int(x) for x in message.split('#')]
@@ -154,25 +184,6 @@ def perform_routing(server_handle, db_handle, data) :
             print "zero2"
             server_handle.message("0")
 
-    elif opcode == "reg" :
-        phone_num, password = split_login_string(message)
-
-        # validate input from phone 
-        if protoc_validate_login(phone_num, password) == False  :
-            # invalid input
-            print "error 2"
-            server_handle.message("0")
-            return
-
-        phone_num = sanitize_phone_number(phone_num)
-        if check_phonenumber_taken(db_handle, phone_num) == True :
-            print "error 1"
-            server_handle.message_phone_number_exists()
-            return
-
-        insert_user_into_database(db_handle, phone_num, password)
-        server_handle.message("1")
-
     elif opcode == "msg":
         msg = server_handle.name + ": " + message
     '''
@@ -203,11 +214,19 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "newevent:"+json_msg)
-    '''
     msg = dict()
     msg["user_id"] = 6505758648
     msg["offset"] = 0
     msg["amount"] = 20
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "pollinvited:" + json_msg)
+    '''
+    msg = dict()
+    msg["gender"] = "M"
+    msg["phone_num"] = 6505758649
+    msg["nick"] = "ZhouYi"
+    msg["pass_hash"] = "password"
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "newevent:"+json_msg)
     
