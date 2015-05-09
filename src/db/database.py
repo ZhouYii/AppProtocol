@@ -210,6 +210,31 @@ def db_insert_image(handle, key, bytestring) :
     prepared = handle.prepare(query)
     handle.execute(prepared, [key, bytestring])
 
+def user_profile_update_intro(handle, phone_num, intro) :
+    query = "UPDATE social.user SET introduction = ? WHERE phone_number = ?"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [intro, phone_num])
+
+def user_profile_update_location(handle, phone_num, location) :
+    query = "UPDATE social.user SET location= ? WHERE phone_number = ?"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [location, phone_num])
+
+def user_profile_update_email(handle, phone_num, email) :
+    query = "UPDATE social.user SET email = ? WHERE phone_number = ?"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [email, phone_num])
+
+def user_profile_update_nick(handle, phone_num, nick) :
+    query = "UPDATE social.user SET nickname = ? WHERE phone_number = ?"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [nick, phone_num])
+
+def user_profile_update_password(handle, phone_num, password) :
+    query = "UPDATE social.user SET password = ? WHERE phone_number = ?"
+    prepared = handle.prepare(query)
+    handle.execute(prepared, [password, phone_num])
+
 def TimestampMillisec64():
     return int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
 

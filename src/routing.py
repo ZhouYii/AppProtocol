@@ -53,7 +53,29 @@ def perform_routing(server_handle, db_handle, data) :
         else :
             server_handle.message("0")
 
+    elif opcode == "profile" :
+        dat = json.loads(str(message))
+        if dat.has_key("phone") :
+            phone_num = dat["phone"]
 
+            if dat.has_key("intro") :
+                user_profile_update_intro(db_handle, phone_num, dat["intro"])
+
+            if dat.has_key("email") :
+                user_profile_update_email(db_handle, phone_num, dat["email"])
+
+            if dat.has_key("location") :
+                user_profile_update_location(db_handle, phone_num, dat["location"])
+
+            if dat.has_key("nick") :
+                user_profile_update_nick(db_handle, phone_num, dat["nick"])
+
+            if dat.has_key("pass") :
+                user_profile_update_password(db_handle, phone_num, dat["pass"])
+
+            server_handle.message("1")
+        else :
+            server_handle.message("0")
 
     elif opcode == "addfriend" :
         id1,id2 = [int(x) for x in message.split('#')]
@@ -219,8 +241,8 @@ if __name__ == "__main__" :
     '''
     msg = dict()
     msg["gender"] = "M"
-    msg["phone_num"] = 6505758649
-    msg["nick"] = "ZhouYi"
+    msg["phone_num"] = 6505758650
+    msg["nick"] = "ZhouYi2"
     msg["pass_hash"] = "password"
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
@@ -234,7 +256,19 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "log:"+json_msg)
     '''
+    '''
     msg = "getfriends:6505758649"
     print msg
     perform_routing(server, handle, msg)
-    
+    '''
+
+    msg = dict()
+    msg["phone"] = 6505758649
+    msg["intro"] = "password"
+    msg["email"] = "myemail"
+    msg["location"] = "mylocation"
+    msg["nick"] = "mynickname"
+    msg["pass"] = "mypassword"
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "profile:"+json_msg)
