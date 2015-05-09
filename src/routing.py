@@ -3,6 +3,9 @@ from twisted.internet import reactor
 #from db.database import *
 #from src.serveractions import register, login
 from tools.util import split_opcode, event_print_helper
+
+import uuid
+
 import events.events as ev
 
 def perform_routing(server_handle, db_handle, data) :
@@ -115,18 +118,20 @@ def perform_routing(server_handle, db_handle, data) :
         # Check if json fields are present :
         # host_id, location, time, title
         if dat.has_key("host_id") and dat.has_key("location") and \
-            dat.has_key("title") and dat.has_key("time") :
+            dat.has_key("title") and dat.has_key("time") and \
+            dat.has_key("event_id") :
                 host = dat["host_id"]
                 location = dat["location"]
                 title = dat["title"]
-                time = dat["time"]
+                time = int(dat["time"])
+                event_uuid = uuid.UUID(dat["event_id"])
                 if dat.has_key("invite_list") :
                     invite_list = dat["invite_list"]
                     event_id = ev.create_event(db_handle, host, location, 
-                                           title, time, invite_list)
+                                           title, time, event_uuid, invite_list)
                 else :
                     event_id = ev.create_event(db_handle, host, location, 
-                                            title, time)
+                                            title, time, event_uuid)
                     server_handle.message(str(event_id))
 
     elif opcode == "pollinvited" :
@@ -261,7 +266,7 @@ if __name__ == "__main__" :
     print msg
     perform_routing(server, handle, msg)
     '''
-
+    '''
     msg = dict()
     msg["phone"] = 6505758649
     msg["intro"] = "password"
@@ -272,3 +277,16 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "profile:"+json_msg)
+    '''
+    
+    msg=dict()
+    msg["event_id"] = str(uuid.uuid1())
+    msg["location"] = "evt loc"
+    msg["host_id"] = 6505758649
+    msg["title"] = "my event"
+    msg["time"] = TimestampMillisec64()
+    msg["invite_list"] = [650575850]
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "newevent:"+json_msg)
+    
