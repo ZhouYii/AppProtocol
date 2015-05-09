@@ -38,6 +38,23 @@ def perform_routing(server_handle, db_handle, data) :
         else :
             server_handle.message("0")
 
+    elif opcode == "log" :
+        dat = json.loads(str(message))
+        if dat.has_key("phone") and dat.has_key("pass") :
+            phone_num = dat["phone"]
+            password = dat["pass"]
+
+            # phone_num = sanitize_phone_number(phone_num) frontend strip out non-numeric?
+            success = login_authenticate(db_handle, phone_num, password)
+            if success :
+                server_handle.message("1")
+            else :
+                server_handle.message("0")
+        else :
+            server_handle.message("0")
+
+
+
     elif opcode == "addfriend" :
         id1,id2 = [int(x) for x in message.split('#')]
         # 0 for success 1 for fail
@@ -46,7 +63,12 @@ def perform_routing(server_handle, db_handle, data) :
 
     elif opcode == "getfriends" :
         id = int(message)
-        friends_list = getfriends(id)
+        friends_set = db_core_get_subscribers(handle, id)
+        print "friends: " + str(friends_set)
+        d = dict()
+        d["friends"] = list(friends_set)
+        response = json.dumps(d, separators=(',',':'))
+        server_handle.message(response)
 
     elif opcode == "eventreject" :
         dat = json.loads(str(message))
@@ -157,27 +179,6 @@ def perform_routing(server_handle, db_handle, data) :
         phonenum = int(message)
         # todo delete 
 
-    elif opcode == "log" :
-        phone_num, password = split_login_string(message)
-        print phone_num
-        print password
-
-        # validate input from phone 
-        if protoc_validate_login(phone_num, password) == False  :
-            # invalid input
-            print "zero1"
-            server_handle.message("0")
-            return
-
-        phone_num = sanitize_phone_number(phone_num)
-
-        success = login_authenticate(db_handle, phone_num, password)
-        if success :
-            server_handle.message("1")
-        else :
-            print "zero2"
-            server_handle.message("0")
-
     elif opcode == "msg":
         msg = server_handle.name + ": " + message
     '''
@@ -215,6 +216,7 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "pollinvited:" + json_msg)
     '''
+    '''
     msg = dict()
     msg["gender"] = "M"
     msg["phone_num"] = 6505758649
@@ -223,4 +225,16 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "reg:"+json_msg)
+    '''
+    '''
+    msg = dict()
+    msg["phone"] = 6505758649
+    msg["pass"] = "password"
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "log:"+json_msg)
+    '''
+    msg = "getfriends:6505758649"
+    print msg
+    perform_routing(server, handle, msg)
     

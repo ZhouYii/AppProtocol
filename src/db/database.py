@@ -170,7 +170,7 @@ def add_friend(handle, userid1, userid2) :
         VALUES (?, ?)
         """)
     handle.execute(prepared, [userid1, userid2])
-    return 0
+    return 1
 
 def db_newsfeed_new_post(handle, time, userid, body, photo=None) :
     if photo == None :
