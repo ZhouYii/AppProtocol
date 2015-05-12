@@ -8,12 +8,21 @@ import db.database as db
 from tools.util import unix_time_millis, to_json
 import uuid
 
-def create_event(handle, host_id, location, title, time, event_id, invite_list=[]) :
-    print "invited:"+str(invite_list)
-    print time
-    db.insert_event_into_database(handle, event_id, title, location, time, host_id)
+def create_event(handle, host_id, location, title, time,
+                 event_id, is_public, invite_list=[]) :
+
+    # is-public matters?
+
+    db.insert_event_into_database(handle, event_id, title, location, time, host_id, is_public)
+
     for user_id in invite_list :
         db.add_new_visible_event_to_user(handle, user_id, event_id)
+
+    if is_public :
+        second_degree = db.db_second_deg_friends(handle, host_id)
+        second_degree = second_degree - set(invite_list)
+        for user_id in second_degree :
+            db.add_new_visible_event_to_user(handle, user_id, event_id)
     return event_id
 
 def event_invite(handle, invitee, event_id) :
@@ -24,7 +33,8 @@ def event_reject(handle, invitee, event_id) :
 
 def event_accept(handle, invited_user, event_id) :
     db.accept_event_invitation(handle, invited_user, event_id)
-    #update some shit
+
+    # notify event creator
 
 def poll_invited_events(handle, user_id, start_offset=0, amount=10) :
     users_events = db.get_user_events_invited(handle, user_id)

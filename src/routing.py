@@ -29,9 +29,11 @@ def perform_routing(server_handle, db_handle, data) :
                 nick = dat["nick"]
 
                 #phone_num = sanitize_phone_number(phone_num)
+                '''
                 if check_phonenumber_taken(db_handle, phone_num) == True :
                     server_handle.message(str(0))
                     return
+                '''
                 insert_user_into_database(db_handle,
                                           phone_num,
                                           gender,
@@ -81,13 +83,44 @@ def perform_routing(server_handle, db_handle, data) :
             server_handle.message("0")
 
     elif opcode == "addfriend" :
-        id1,id2 = [int(x) for x in message.split('#')]
+        dat = json.loads(str(message))
+        if not (dat.has_key("src_user") and dat.has_key("dst_user")) :
+            server_handle.message(0)
+            return 1
+        id1 = dat["src_user"]
+        id2 = dat["dst_user"]
+        if dat.has_key("msg") :
+            message = dat["msg"]
+        else :
+            message = "I want to be your friend ;)"
+
         # 0 for success 1 for fail
-        success = add_friend(db_handle, id1, id2)
+        success = add_friend_request(db_handle, id1, id2, message)
         server_handle.message(str(success))
+
+    elif opcode == "getfriendrequests" :
+        # rey with list of nickname, phone_num, message
+        user_id = int(message)
+        ret_msg = dict()
+        ret_msg["requests"] = []
+        request_list = get_pending_friend_request(handle, user_id)
+        for phone_num, msg, nickname in request_list :
+            req = dict()
+            req["phone"] = phone_num
+            req["nick"] = nickname
+            req["msg"] = msg
+            ret_msg["requests"].append(req)
+        json_msg = json.dumps(ret_msg, separators=(',',':'))
+        server_handle.message(json_msg)
+
+    elif opcode == "acceptfriend" :
+        id1, id2 = message.split("#")
+        db_accept_friend_request(handle, int(id1), int(id2))
+        server_handle.message(1)
 
     elif opcode == "getfriends" :
         id = int(message)
+        print id
         friends_set = db_core_get_subscribers(handle, id)
         print "friends: " + str(friends_set)
         d = dict()
@@ -119,20 +152,23 @@ def perform_routing(server_handle, db_handle, data) :
         # host_id, location, time, title
         if dat.has_key("host_id") and dat.has_key("location") and \
             dat.has_key("title") and dat.has_key("time") and \
-            dat.has_key("event_id") :
+            dat.has_key("event_id") and dat.has_key("public") :
                 host = dat["host_id"]
                 location = dat["location"]
                 title = dat["title"]
                 time = int(dat["time"])
                 event_uuid = uuid.UUID(dat["event_id"])
+                public_visible = dat["public"]
+
                 if dat.has_key("invite_list") :
                     invite_list = dat["invite_list"]
                     event_id = ev.create_event(db_handle, host, location, 
-                                           title, time, event_uuid, invite_list)
+                                           title, time, event_uuid, public_visible,
+                                           invite_list)
                 else :
                     event_id = ev.create_event(db_handle, host, location, 
-                                            title, time, event_uuid)
-                    server_handle.message(str(event_id))
+                                            title, time, event_uuid, public_visible)
+                server_handle.message(str(event_id))
 
     elif opcode == "pollinvited" :
         dat = json.loads(str(message))
@@ -215,7 +251,7 @@ def perform_routing(server_handle, db_handle, data) :
 if __name__ == "__main__" :
     class ServerStub:
         def message(self, string):
-            print("server says:" + string)
+            print("server says:" + str(string))
 
     def TimestampMillisec64():
         return int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
@@ -243,16 +279,28 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "pollinvited:" + json_msg)
     '''
-    '''
+
+    id1 = 12341234
+    id2 = 68958695
+
     msg = dict()
     msg["gender"] = "M"
-    msg["phone_num"] = 6505758650
+    msg["phone_num"] = id1
     msg["nick"] = "ZhouYi2"
     msg["pass_hash"] = "password"
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "reg:"+json_msg)
-    '''
+
+    msg = dict()
+    msg["gender"] = "M"
+    msg["phone_num"] = id2
+    msg["nick"] = "ZhouYi2"
+    msg["pass_hash"] = "password"
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "reg:"+json_msg)
+
     '''
     msg = dict()
     msg["phone"] = 6505758649
@@ -261,12 +309,15 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "log:"+json_msg)
     '''
+
     '''
     msg = "getfriends:6505758649"
     print msg
     perform_routing(server, handle, msg)
     '''
+
     '''
+    # profile update
     msg = dict()
     msg["phone"] = 6505758649
     msg["intro"] = "password"
@@ -279,14 +330,36 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "profile:"+json_msg)
     '''
     
+
+    # test events
+    event_id = str(uuid.uuid1())
     msg=dict()
-    msg["event_id"] = str(uuid.uuid1())
-    msg["location"] = "evt loc"
+    msg["event_id"] = event_id
+    msg["location"] = "test event location2"
     msg["host_id"] = 6505758649
-    msg["title"] = "my event"
+    msg["title"] = "my event title2"
     msg["time"] = TimestampMillisec64()
     msg["invite_list"] = [650575850]
+    msg["public"] = True
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "newevent:"+json_msg)
     
+    msg=dict()
+    msg["event_id"] = event_id
+    msg["user_id"] = 6505758649
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "eventaccept:"+json_msg)
+
+    '''
+    # testing friends
+    msg = dict()
+    msg["src_user"] = id1
+    msg["dst_user"] = id2
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    perform_routing(server, handle, "addfriend:"+json_msg)
+    perform_routing(server, handle, "getfriendrequests:"+str(id2))
+    perform_routing(server, handle, "acceptfriend:"+str(id2)+"#"+str(id1))
+    perform_routing(server, handle, "getfriends:"+str(id2))
+    '''

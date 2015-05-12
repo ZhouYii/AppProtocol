@@ -16,32 +16,80 @@ def init_session(keyspace="social") :
     handle = cluster.connect("social")
     return handle
 
-def db_core_get_subscribers(handle, userid) :
-    query = "SELECT * FROM friend WHERE userid1=" + str(userid) + ";"
-    prepared = handle.prepare(query)
-    rows = handle.execute(prepared)
-    initial_list = set([list(r)[1] for r in rows])#.difference(set([userid]))
-    #initial_list.add(userid)
-    query = "SELECT * FROM blacklist WHERE userid1=" + str(userid) + ";"
-    prepared = handle.prepare(query)
-    rows = handle.execute(prepared)
-    blacklisted = set([list(r)[1] for r in rows])
+def get_pending_friend_request(handle, userid) :
+    prepared = handle.prepare("""
+        SELECT * from pendingfriend WHERE pending_user = ?;
+        """)
+    rows = handle.execute(prepared, [userid])
+    potential_friends = list(rows)
 
-    return initial_list - blacklisted
+    # reverse for chronological order
+    return list(reversed([list(r)[1:4] for r in potential_friends]))
+
+'''
+    requesting_user - user who issued the friend request
+    accepting_user - user who recieved the friend request
+'''
+def db_accept_friend_request(handle, accepting_user, requesting_user) :
+    prepared = handle.prepare("""
+         SELECT * from pendingfriend WHERE pending_user = ? AND requesting_user = ?;
+        """)
+    rows = handle.execute(prepared, [accepting_user, requesting_user])
+
+    # check if request exists
+    if len(rows) > 0 :
+        # remove request
+        prepared = handle.prepare("""
+            DELETE FROM pendingfriend WHERE pending_user = ? AND requesting_user = ?;
+            """)
+        handle.execute(prepared, [accepting_user, requesting_user])
+
+        # add friend
+        prepared = handle.prepare("""
+            INSERT INTO friend (userid1, userid2)
+            VALUES (?, ?)
+            """)
+        handle.execute(prepared, [requesting_user, accepting_user])
+        handle.execute(prepared, [accepting_user, requesting_user])
+        return 1
+    return 0
+
+def db_second_deg_friends(handle, userid) :
+    first_deg = db_get_friends(handle, userid)
+    second_deg = set(first_deg)
+    for user in first_deg :
+        new_friends = set(db_get_friends(handle, user))
+        second_deg = second_deg.union(new_friends)
+    second_deg.discard(userid)
+    return second_deg
+
+def db_get_friends(handle, userid) :
+    query = "SELECT * FROM friend WHERE userid1 = ?;"
+    prepared = handle.prepare(query)
+    rows = handle.execute(prepared, [userid])
+    initial_list = set([list(r)[1] for r in rows])#.difference(set([userid]))
+    return initial_list
+
+def db_core_get_subscribers(handle, userid) :
+    query = "SELECT * FROM friend WHERE userid1 = ?;"
+    prepared = handle.prepare(query)
+    rows = handle.execute(prepared, [userid])
+    print rows
+    initial_list = set([list(r)[1] for r in rows])#.difference(set([userid]))
+    return initial_list
 
 # EVENTS
 def insert_event_into_database(handle, event_id, title, 
-                                loc, begin_time, creator_id) :
+                                loc, begin_time, creator_id, is_public) :
     prepared = handle.prepare("""
-        INSERT INTO events (event_id, title, location, begin_time, attending_userids)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO events (event_id, title, location, begin_time, attending_userids, public)
+        VALUES (?, ?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [event_id, title, loc, begin_time, [creator_id]])
+    handle.execute(prepared, [event_id, title, loc, begin_time, [creator_id], is_public])
 
 def event_add_attendee(handle, event_id, user_id) :
-    query = "UPDATE events SET attending_userids = attending_userids + {" + str(user_id) + "} WHERE event_id = " + str(event_id) + ';'
-    prepared = handle.prepare(query)
-    handle.execute(prepared)
+    prepared = handle.prepare("""UPDATE events SET attending_userids = attending_userids + ? WHERE event_id = ?""")
+    handle.execute(prepared, [set([user_id]), uuid.UUID(event_id)])
 
 def add_new_visible_event_to_user(handle, user_id, event_id) :
     retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
@@ -55,13 +103,13 @@ def add_new_visible_event_to_user(handle, user_id, event_id) :
 # Get the row of information from the database.
 def get_event_details(handle, event_id) :
     prepared = """
-        SELECT * FROM EVENTS WHERE event_id = """ + str(event_id) + ";"
+        SELECT * FROM social.events WHERE event_id = """ + str(event_id) + ";"
     rows = handle.execute(prepared)
     if len(rows) == 0 :
         return None
     event = rows[0]
     ## ID, Attendees, begin time, location, title
-    return (event[0], event[1], event[2], event[3], event[4])
+    return (event[0], event[1], event[2], event[3], event[5])
 
 
 # wrapper to provide seneible interface
@@ -75,20 +123,23 @@ def reject_event_invitation(handle, user_id, event_id) :
 # extracts the details of the event referred to by event_id and passes to continutation
 def accept_event_invitation(handle, user_id, event_id) :
     retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
-    if retrieved_id != event_id :
+    if str(retrieved_id) != str(event_id) :
+        print "str" + str(event_id)
+        print "str" + str(retrieved_id)
         return
 
     prepared = handle.prepare("""
-        INSERT INTO accepted_events (user_id, event_id, start_time, location, title)
+        INSERT INTO social.accepted_events (user_id, event_id, location, start_time,  title)
         VALUES (?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [user_id, event_id, start_time,location, title])
+    handle.execute(prepared, [user_id, uuid.UUID(event_id), location ,start_time, title])
     
     # Definitely do not use same code path as event rejection for future-proofing
     prepared = handle.prepare("""
-        DELETE FROM visible_events  
-        WHERE event_id = """ + str(event_id) + """ AND user_id = """ + str(user_id) + ";")
-    handle.execute(prepared)
+        DELETE FROM visible_events
+        WHERE event_id = ? AND user_id = ?;""")
+    handle.execute(prepared, [uuid.UUID(event_id), user_id])
+    print prepared
 
     event_add_attendee(handle, event_id, user_id)
 
@@ -159,17 +210,34 @@ def login_authenticate(handle, phone_number, password) :
         return True
     return False
 
-def add_friend(handle, userid1, userid2) :
+def db_get_user_nickname(handle, userid) :
+    prepared = handle.prepare( """
+        select nickname from user where phone_number = ?;
+     """)
+    row = handle.execute(prepared, [userid])
+    print row
+    if len(row) == 0 :
+        return None
+    return str(list(row)[0][0])
+
+def add_friend_request(handle, requesting_user, desired_friend, message) :
     '''
         Should this be directed or undirected?
 
         This function should not check for referential integrity inthe database because the assumption is the user pair are valid users. Otherwise, the client should not be able to view the userid2 profile. userid1 is known to exist because we have authenticated login
     '''
+    nick = db_get_user_nickname(handle, requesting_user)
+    print "nick" + str(nick)
+
+    # this should not happen. backend should get sanitary inputs
+    if nick == None :
+        return 1
+
     prepared = handle.prepare("""
-        INSERT INTO friend (userid1, userid2)
-        VALUES (?, ?)
+        INSERT INTO pendingfriend (pending_user, requesting_user, message, requesting_nick)
+        VALUES (?, ?, ?, ?)
         """)
-    handle.execute(prepared, [userid1, userid2])
+    handle.execute(prepared, [desired_friend, requesting_user, message, nick])
     return 1
 
 def db_newsfeed_new_post(handle, time, userid, body, photo=None) :
@@ -246,6 +314,20 @@ if __name__ == "__main__" :
     print str(TimestampMillisec64())
     uuid_str = uuid.uuid1()
     time_start = TimestampMillisec64()
+
+    print db_second_deg_friends(handle, 123456789)
+    print db_second_deg_friends(handle, 6505758649)
+
+    '''
+    db_get_user_nickname(handle, 123456789)
+
+    add_friend_request(handle, 6505758649, 123456789, "my frnd")
+    add_friend_request(handle, 6505758650, 123456789, "hello")
+    print get_pending_friend_request(handle, 123456789)
+    db_accept_friend_request(handle, 123456789, 6505758650)
+    '''
+
+    ''''
     insert_event_into_database(handle, uuid_str,
                                "titlenew", "location", 
                                time_start, 6505758649)
@@ -266,3 +348,4 @@ if __name__ == "__main__" :
     print len(get_user_events_accepted(handle, 6505758648))
 
     print get_event_details(handle, uuid_str)
+    '''
