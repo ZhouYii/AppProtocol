@@ -1,7 +1,6 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
-#from db.database import *
-#from src.serveractions import register, login
+from db.database import *
 from tools.util import split_opcode, event_print_helper
 
 import uuid
@@ -301,14 +300,12 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "reg:"+json_msg)
 
-    '''
     msg = dict()
-    msg["phone"] = 6505758649
+    msg["phone"] = id1
     msg["pass"] = "password"
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "log:"+json_msg)
-    '''
 
     '''
     msg = "getfriends:6505758649"
@@ -330,6 +327,7 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "profile:"+json_msg)
     '''
     
+    '''
 
     # test events
     event_id = str(uuid.uuid1())
@@ -352,7 +350,6 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "eventaccept:"+json_msg)
 
-    '''
     # testing friends
     msg = dict()
     msg["src_user"] = id1
