@@ -15,6 +15,7 @@ def create_event(handle, host_id, location, title, time,
 
     db.insert_event_into_database(handle, event_id, title, location, time, host_id, is_public)
 
+    print invite_list
     for user_id in invite_list :
         db.add_new_visible_event_to_user(handle, user_id, event_id)
 

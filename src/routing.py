@@ -60,7 +60,7 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "profile" :
         dat = json.loads(str(message))
         if dat.has_key("phone") :
-            phone_num = dat["phone"]
+            phone_num = int(dat["phone"])
 
             if dat.has_key("intro") :
                 user_profile_update_intro(db_handle, phone_num, dat["intro"])
@@ -174,12 +174,15 @@ def perform_routing(server_handle, db_handle, data) :
         if dat.has_key("user_id") :
             user_id = dat["user_id"]
             if dat.has_key("start_offset") and dat.has_key("amount") :
+                print dat["amount"]
+                print dat["start_offset"]
                 events = ev.poll_invited_events(handle, user_id,
                                         dat["start_offset"], 
                                         dat["amount"])
             else :
                 events =  ev.poll_invited_events(handle, user_id)
-            server_handle.message(event_print_helper(events))
+            print events
+            server_handle.message(event_print_helper(db_handle, events))
 
     elif opcode == "pollaccepted" :
         dat = json.loads(str(message))
@@ -191,7 +194,7 @@ def perform_routing(server_handle, db_handle, data) :
                                         dat["amount"])
             else :
                 events = ev.poll_accepted_events(handle, user_id)
-            server_handle.message(event_print_helper(events))
+            server_handle.message(event_print_helper(db_handle, events))
 
     elif opcode == "newstatus" :
         '''
@@ -327,18 +330,18 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "profile:"+json_msg)
     '''
     
-    '''
 
+    '''
     # test events
     event_id = str(uuid.uuid1())
     msg=dict()
     msg["event_id"] = event_id
-    msg["location"] = "test event location2"
-    msg["host_id"] = 6505758649
-    msg["title"] = "my event title2"
+    msg["location"] = "test event location4"
+    msg["host_id"] = 123456789
+    msg["title"] = "my event title4"
     msg["time"] = TimestampMillisec64()
-    msg["invite_list"] = [650575850]
-    msg["public"] = True
+    msg["invite_list"] = [6505758649]
+    msg["public"] = False
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "newevent:"+json_msg)
@@ -349,7 +352,33 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "eventaccept:"+json_msg)
+    '''
 
+    msg = dict()
+    msg["user_id"] = 6505758650
+    msg["start_offset"] = 0
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollinvited:"+json_msg)
+
+    msg = dict()
+    msg["user_id"] = 6505758650
+    msg["start_offset"] = 10
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollinvited:"+json_msg)
+
+    msg = dict()
+    msg["user_id"] = 6505758649
+    msg["start_offset"] = 0
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollaccepted:"+json_msg)
+
+    '''
     # testing friends
     msg = dict()
     msg["src_user"] = id1

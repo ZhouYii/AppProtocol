@@ -1,7 +1,6 @@
 from cassandra.cluster import Cluster
 from os import sys, path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from tools.util import unix_time_millis
 import datetime, uuid
 
 '''
@@ -94,6 +93,10 @@ def event_add_attendee(handle, event_id, user_id) :
 def add_new_visible_event_to_user(handle, user_id, event_id) :
     retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
 
+    print "aaa"
+    print user_id
+    print get_event_details(handle, event_id)
+
     prepared = handle.prepare("""
         INSERT INTO visible_events (user_id, event_id, start_time, location, title)
         VALUES (?, ?, ?, ?, ?)
@@ -120,6 +123,16 @@ def reject_event_invitation(handle, user_id, event_id) :
         WHERE event_id = """ + str(event_id) + """ AND user_id = """ + str(user_id) + ";")
     handle.execute(prepared)
 
+def event_get_attendees(handle, event_id) :
+    prepared = handle.prepare("""
+        select attending_userids from events where event_id = ?;
+        """)
+    rows = handle.execute(prepared, [event_id])
+    if len(rows) == 0 :
+        return []
+    else :
+        return list(rows[0][0])
+
 # extracts the details of the event referred to by event_id and passes to continutation
 def accept_event_invitation(handle, user_id, event_id) :
     retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
@@ -144,19 +157,24 @@ def accept_event_invitation(handle, user_id, event_id) :
     event_add_attendee(handle, event_id, user_id)
 
 def get_user_events_invited(handle, userid) :
-    query = "SELECT * FROM visible_events WHERE user_id=" + str(userid) + ";"
+    query = "SELECT * FROM visible_events WHERE user_id = ?;"
     prepared = handle.prepare(query)
-    rows = handle.execute(prepared)
+    rows = handle.execute(prepared, [userid])
     # userid, eventid, location, start-time, title
+    print "db layer"
+    print rows
     return [(r[0], r[1], r[2], r[3],r[4]) for r in rows]
 
 def get_user_events_accepted(handle, userid) :
-    query = "SELECT * FROM accepted_events WHERE user_id=" + str(userid) + ";"
+    query = "SELECT * FROM accepted_events WHERE user_id = ?;"
     prepared = handle.prepare(query)
-    rows = handle.execute(prepared)
+    rows = handle.execute(prepared, [userid])
     #print "accepted rows"
     # build event tuple
     # userid, eventid, location, start-time, title
+    print "db layer"
+    print rows
+    [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
     return [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
 
 '''
@@ -315,8 +333,7 @@ if __name__ == "__main__" :
     uuid_str = uuid.uuid1()
     time_start = TimestampMillisec64()
 
-    print db_second_deg_friends(handle, 123456789)
-    print db_second_deg_friends(handle, 6505758649)
+    print event_get_attendees(handle, uuid.UUID("96a3db0f-f8e8-11e4-9664-b8e85632007e"))
 
     '''
     db_get_user_nickname(handle, 123456789)
