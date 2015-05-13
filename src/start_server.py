@@ -19,7 +19,7 @@ class IphoneChat(Protocol):
         self.factory.clients.remove(self)
 
     def message(self, message):
-        self.transport.write(message + '\n')
+        self.transport.write(str(message) + '\n')
 
     def message_phone_number_exists(self) :
         #TODO return a different message from invalid input to have
