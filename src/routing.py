@@ -100,7 +100,7 @@ def perform_routing(server_handle, db_handle, data) :
         user_id = int(message)
         ret_msg = dict()
         ret_msg["requests"] = []
-        request_list = get_pending_friend_request(handle, user_id)
+        request_list = get_pending_friend_request(db_handle, user_id)
         for phone_num, msg, nickname in request_list :
             req = dict()
             req["phone"] = phone_num
