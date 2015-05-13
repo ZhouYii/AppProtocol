@@ -85,8 +85,8 @@ def perform_routing(server_handle, db_handle, data) :
         dat = json.loads(str(message))
         if not (dat.has_key("src_user") and dat.has_key("dst_user")) :
             return 1
-        id1 = dat["src_user"]
-        id2 = dat["dst_user"]
+        id1 = int(dat["src_user"])
+        id2 = int(dat["dst_user"])
         if dat.has_key("msg") :
             message = dat["msg"]
         else :
@@ -352,6 +352,7 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "eventaccept:"+json_msg)
     '''
 
+    '''
     msg = dict()
     msg["user_id"] = 6505758650
     msg["start_offset"] = 0
@@ -375,15 +376,15 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "pollaccepted:"+json_msg)
-
     '''
+
     # testing friends
     msg = dict()
     msg["src_user"] = id1
     msg["dst_user"] = id2
+    msg["msg"] = "omg my message"
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "addfriend:"+json_msg)
     perform_routing(server, handle, "getfriendrequests:"+str(id2))
     perform_routing(server, handle, "acceptfriend:"+str(id2)+"#"+str(id1))
     perform_routing(server, handle, "getfriends:"+str(id2))
-    '''
