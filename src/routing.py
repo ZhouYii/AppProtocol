@@ -112,13 +112,13 @@ def perform_routing(server_handle, db_handle, data) :
 
     elif opcode == "acceptfriend" :
         id1, id2 = message.split("#")
-        db_accept_friend_request(handle, int(id1), int(id2))
+        db_accept_friend_request(db_handle, int(id1), int(id2))
         server_handle.message(1)
 
     elif opcode == "getfriends" :
         id = int(message)
         print id
-        friends_set = db_core_get_subscribers(handle, id)
+        friends_set = db_core_get_subscribers(db_handle, id)
         print "friends: " + str(friends_set)
         d = dict()
         d["friends"] = list(friends_set)
@@ -128,19 +128,19 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "eventreject" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") and dat.has_key("event_id") :
-            ev.event_reject(handle, dat["user_id"], dat["event_id"])
+            ev.event_reject(db_handle, dat["user_id"], dat["event_id"])
             server_handle.message(str(1))
 
     elif opcode == "eventaccept" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") and dat.has_key("event_id") :
-            ev.event_accept(handle, dat["user_id"], dat["event_id"])
+            ev.event_accept(db_handle, dat["user_id"], dat["event_id"])
             server_handle.message(str(1))
 
     elif opcode == "eventinvite" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") and dat.has_key("event_id") :
-            ev.event_invite(handle, dat["user_id"], dat["event_id"])
+            ev.event_invite(db_handle, dat["user_id"], dat["event_id"])
             server_handle.message(str(1))
 
     elif opcode == "newevent" :
@@ -174,11 +174,11 @@ def perform_routing(server_handle, db_handle, data) :
             if dat.has_key("start_offset") and dat.has_key("amount") :
                 print dat["amount"]
                 print dat["start_offset"]
-                events = ev.poll_invited_events(handle, user_id,
+                events = ev.poll_invited_events(db_handle, user_id,
                                         dat["start_offset"], 
                                         dat["amount"])
             else :
-                events =  ev.poll_invited_events(handle, user_id)
+                events =  ev.poll_invited_events(db_handle, user_id)
             print events
             server_handle.message(event_print_helper(db_handle, events))
 
@@ -187,11 +187,11 @@ def perform_routing(server_handle, db_handle, data) :
         if dat.has_key("user_id") :
             user_id = dat["user_id"]
             if dat.has_key("start_offset") and dat.has_key("amount") :
-                events = ev.poll_accepted_events(handle, user_id,
+                events = ev.poll_accepted_events(db_handle, user_id,
                                         dat["start_offset"], 
                                         dat["amount"])
             else :
-                events = ev.poll_accepted_events(handle, user_id)
+                events = ev.poll_accepted_events(db_handle, user_id)
             server_handle.message(event_print_helper(db_handle, events))
 
     elif opcode == "newstatus" :
