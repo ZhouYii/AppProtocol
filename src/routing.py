@@ -84,7 +84,6 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "addfriend" :
         dat = json.loads(str(message))
         if not (dat.has_key("src_user") and dat.has_key("dst_user")) :
-            server_handle.message(0)
             return 1
         id1 = dat["src_user"]
         id2 = dat["dst_user"]
@@ -95,7 +94,6 @@ def perform_routing(server_handle, db_handle, data) :
 
         # 0 for success 1 for fail
         success = add_friend_request(db_handle, id1, id2, message)
-        server_handle.message(str(success))
 
     elif opcode == "getfriendrequests" :
         # rey with list of nickname, phone_num, message
