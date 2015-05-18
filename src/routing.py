@@ -150,15 +150,16 @@ def perform_routing(server_handle, db_handle, data) :
         if dat.has_key("host_id") and dat.has_key("location") and \
             dat.has_key("title") and dat.has_key("time") and \
             dat.has_key("event_id") and dat.has_key("public") :
-                host = dat["host_id"]
+                host = int(dat["host_id"])
                 location = dat["location"]
                 title = dat["title"]
                 time = int(dat["time"])
                 event_uuid = uuid.UUID(dat["event_id"])
-                public_visible = dat["public"]
+                public_visible = bool(dat["public"])
 
                 if dat.has_key("invite_list") :
                     invite_list = dat["invite_list"]
+                    invite_list = [int(invited_user) for invited_user in invite_list]
                     event_id = ev.create_event(db_handle, host, location, 
                                            title, time, event_uuid, public_visible,
                                            invite_list)

@@ -84,13 +84,19 @@ def insert_event_into_database(handle, event_id, title,
         INSERT INTO events (event_id, title, location, begin_time, attending_userids, public)
         VALUES (?, ?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [event_id, title, loc, begin_time, [creator_id], is_public])
+    '''
+    print "insert event"
+    print [int(creator_id)]
+    print type([int(creator_id)])
+    '''
+    handle.execute(prepared, [event_id, title, loc, begin_time, [int(creator_id)], is_public])
 
 def event_add_attendee(handle, event_id, user_id) :
     prepared = handle.prepare("""UPDATE events SET attending_userids = attending_userids + ? WHERE event_id = ?""")
     handle.execute(prepared, [set([user_id]), uuid.UUID(event_id)])
 
 def add_new_visible_event_to_user(handle, user_id, event_id) :
+    get_event_details(handle, event_id)
     retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
 
     print "aaa"

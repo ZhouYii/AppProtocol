@@ -27,7 +27,7 @@ class IphoneChat(Protocol):
         self.message("-1")
 
     def dataReceived(self, data):
-        perform_routing(self.db_handle, data)
+        perform_routing(self, self.db_handle, data)
 
 factory = Factory()
 factory.protocol = IphoneChat
