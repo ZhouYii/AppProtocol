@@ -50,8 +50,33 @@ def db_accept_friend_request(handle, accepting_user, requesting_user) :
             """)
         handle.execute(prepared, [requesting_user, accepting_user])
         handle.execute(prepared, [accepting_user, requesting_user])
+        create_friend_accept_notification(handle, accepting_user, requesting_user)
         return 1
     return 0
+
+def create_friend_accept_notification(handle, accepting_user, 
+                                      request_creation_user,
+                                      seen = False) :
+    prepared = handle.prepare("""
+        INSERT INTO accepted_friend_requests
+            (request_creation_user, accepting_user, seen)
+        VALUES (?, ?, ?)""")
+    handle.execute(prepared, [request_creation_user, accepting_user, seen])
+
+def get_unseen_friend_accept_notification(handle, request_creation_user) :
+    prepared = handle.prepare("""
+        select accepting_user from accepted_friend_requests 
+        where seen=False and request_creation_user = ?;""")
+    rows = handle.execute(prepared, [request_creation_user])
+    print "newfriends"
+    new_friends = [list(r)[0] for r in rows]
+    print new_friends
+
+    # Mark as seen
+    for friend_id in new_friends :
+        create_friend_accept_notification(handle, friend_id, 
+                                          request_creation_user, True)
+    return new_friends
 
 def db_second_deg_friends(handle, userid) :
     first_deg = db_get_friends(handle, userid)
@@ -73,35 +98,32 @@ def db_core_get_subscribers(handle, userid) :
     query = "SELECT * FROM friend WHERE userid1 = ?;"
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
-    print rows
     initial_list = set([list(r)[1] for r in rows])#.difference(set([userid]))
     return initial_list
 
 # EVENTS
 def insert_event_into_database(handle, event_id, title, 
-                                loc, begin_time, creator_id, is_public) :
+                                loc, begin_time, creator_id, is_public, desc) :
     prepared = handle.prepare("""
-        INSERT INTO events (event_id, title, location, begin_time, attending_userids, public)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO events (event_id, title, location, begin_time, attending_userids, public, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [event_id, title, loc, begin_time, [creator_id], is_public])
+    handle.execute(prepared, \
+            [event_id, title, loc, begin_time, [creator_id], is_public, desc])
 
 def event_add_attendee(handle, event_id, user_id) :
     prepared = handle.prepare("""UPDATE events SET attending_userids = attending_userids + ? WHERE event_id = ?""")
     handle.execute(prepared, [set([user_id]), uuid.UUID(event_id)])
 
-def add_new_visible_event_to_user(handle, user_id, event_id) :
-    retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
-
-    print "aaa"
-    print user_id
-    print get_event_details(handle, event_id)
+def add_new_visible_event_to_user(handle, user_id, event_id, desc) :
+    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+            get_event_details(handle, event_id)
 
     prepared = handle.prepare("""
-        INSERT INTO visible_events (user_id, event_id, start_time, location, title)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO visible_events (user_id, event_id, start_time, location, title, description)
+        VALUES (?, ?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [user_id, event_id, start_time, location, title])
+    handle.execute(prepared, [user_id, event_id, start_time, location, title, desc])
 
 # Get the row of information from the database.
 def get_event_details(handle, event_id) :
@@ -112,7 +134,8 @@ def get_event_details(handle, event_id) :
         return None
     event = rows[0]
     ## ID, Attendees, begin time, location, title
-    return (event[0], event[1], event[2], event[3], event[5])
+    # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
+    return (event[0], event[1], event[2], event[3], event[4], event[5], event[6])
 
 
 # wrapper to provide seneible interface
@@ -134,48 +157,47 @@ def event_get_attendees(handle, event_id) :
         return list(rows[0][0])
 
 # extracts the details of the event referred to by event_id and passes to continutation
-def accept_event_invitation(handle, user_id, event_id) :
-    retrieved_id, attendees, start_time, location, title = get_event_details(handle, event_id)
+def accept_event_invitation(handle, user_id, event_id, desc) :
+    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+            get_event_details(handle, event_id)
     if str(retrieved_id) != str(event_id) :
-        print "str" + str(event_id)
-        print "str" + str(retrieved_id)
         return
 
     prepared = handle.prepare("""
-        INSERT INTO social.accepted_events (user_id, event_id, location, start_time,  title)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO social.accepted_events (user_id, event_id, location, start_time,  title, description)
+        VALUES (?, ?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [user_id, uuid.UUID(event_id), location ,start_time, title])
+    handle.execute(prepared, [user_id, uuid.UUID(event_id), location ,start_time, title, desc])
     
     # Definitely do not use same code path as event rejection for future-proofing
     prepared = handle.prepare("""
         DELETE FROM visible_events
         WHERE event_id = ? AND user_id = ?;""")
     handle.execute(prepared, [uuid.UUID(event_id), user_id])
-    print prepared
 
     event_add_attendee(handle, event_id, user_id)
 
 def get_user_events_invited(handle, userid) :
-    query = "SELECT * FROM visible_events WHERE user_id = ?;"
+    query = """SELECT user_id, event_id, description, location, start_time, title 
+    FROM visible_events WHERE user_id = ?;"""
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
     # userid, eventid, location, start-time, title
-    print "db layer"
+    print "invited db layer"
     print rows
-    return [(r[0], r[1], r[2], r[3],r[4]) for r in rows]
+    return [(r[0], r[1], r[2], r[3], r[4], r[5]) for r in rows]
 
 def get_user_events_accepted(handle, userid) :
-    query = "SELECT * FROM accepted_events WHERE user_id = ?;"
+    query = """SELECT user_id, event_id, description, location, start_time, title 
+    FROM accepted_events WHERE user_id = ?;"""
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
-    #print "accepted rows"
     # build event tuple
     # userid, eventid, location, start-time, title
-    print "db layer"
+    print "accepted db layer"
     print rows
     [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
-    return [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
+    return [(r[0], r[1], r[2], r[3], r[4], r[5]) for r in rows]
 
 '''
 Add a new user
@@ -193,10 +215,6 @@ def insert_user_into_database(handle, phone_number, gender, nickname, password) 
         VALUES (?, ?, ?, ?)
         """)
     handle.execute(prepared, [int(phone_number), bool(gender), str(nickname), str(password)])
-    print phone_number
-    print gender
-    print nickname
-    print password
 
 def check_phonenumber_taken(handle, phone_number) :
     '''
@@ -209,7 +227,6 @@ def check_phonenumber_taken(handle, phone_number) :
         """)
     row = handle.execute(prepared, [phone_number])
     if len(row) > 0 :
-        print "Phone number taken"
         return True
     return False
 
@@ -233,7 +250,6 @@ def db_get_user_nickname(handle, userid) :
         select nickname from user where phone_number = ?;
      """)
     row = handle.execute(prepared, [userid])
-    print row
     if len(row) == 0 :
         return None
     return str(list(row)[0][0])
@@ -245,7 +261,6 @@ def add_friend_request(handle, requesting_user, desired_friend, message) :
         This function should not check for referential integrity inthe database because the assumption is the user pair are valid users. Otherwise, the client should not be able to view the userid2 profile. userid1 is known to exist because we have authenticated login
     '''
     nick = db_get_user_nickname(handle, requesting_user)
-    print "nick" + str(nick)
 
     # this should not happen. backend should get sanitary inputs
     if nick == None :
@@ -329,11 +344,8 @@ if __name__ == "__main__" :
     handle = init_session()
     #import newsfeed.newsfeed as nf
     #print db_newsfeed_get_user_newsfeed(handle, 6505758649)
-    print str(TimestampMillisec64())
     uuid_str = uuid.uuid1()
     time_start = TimestampMillisec64()
-
-    print event_get_attendees(handle, uuid.UUID("96a3db0f-f8e8-11e4-9664-b8e85632007e"))
 
     '''
     db_get_user_nickname(handle, 123456789)

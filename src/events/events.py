@@ -9,31 +9,35 @@ from tools.util import unix_time_millis, to_json
 import uuid
 
 def create_event(handle, host_id, location, title, time,
-                 event_id, is_public, invite_list=[]) :
+                 event_id, is_public, description, invite_list=[]) :
 
     # is-public matters?
 
-    db.insert_event_into_database(handle, event_id, title, location, time, host_id, is_public)
+    db.insert_event_into_database(handle, event_id, title, location, 
+            time, host_id, is_public, description)
 
-    print invite_list
     for user_id in invite_list :
-        db.add_new_visible_event_to_user(handle, user_id, event_id)
+        db.add_new_visible_event_to_user(handle, user_id, event_id, description)
 
     if is_public :
         second_degree = db.db_second_deg_friends(handle, host_id)
         second_degree = second_degree - set(invite_list)
         for user_id in second_degree :
-            db.add_new_visible_event_to_user(handle, user_id, event_id)
+            db.add_new_visible_event_to_user(handle, user_id, event_id, description)
     return event_id
 
 def event_invite(handle, invitee, event_id) :
-    db.add_new_visible_event_to_user(handle, invitee, event_id)
+    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+            db.get_event_details(handle, event_id)
+    db.add_new_visible_event_to_user(handle, invitee, event_id, desc)
 
 def event_reject(handle, invitee, event_id) :
     db.reject_event_invitation(handle, invitee, event_id)
 
 def event_accept(handle, invited_user, event_id) :
-    db.accept_event_invitation(handle, invited_user, event_id)
+    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+            db.get_event_details(handle, event_id)
+    db.accept_event_invitation(handle, invited_user, event_id, desc)
 
     # notify event creator
 
