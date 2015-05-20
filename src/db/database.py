@@ -11,7 +11,8 @@ def init_session(keyspace="social") :
     ''' 
     Start a connection into cassandra database
     '''
-    cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
+    #cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
+    cluster = Cluster()
     handle = cluster.connect("social")
     return handle
 
@@ -78,6 +79,7 @@ def get_unseen_friend_accept_notification(handle, request_creation_user) :
                                           request_creation_user, True)
     return new_friends
 
+# Get the friends which are first and second degree away
 def db_second_deg_friends(handle, userid) :
     first_deg = db_get_friends(handle, userid)
     second_deg = set(first_deg)
@@ -102,6 +104,20 @@ def db_core_get_subscribers(handle, userid) :
     return initial_list
 
 # EVENTS
+
+# Creates a public event which displays on friend-of-friend newsfeed
+# Current policy is to directly update newsfeeds
+'''
+def insert_event_into_database_public(handle, event_id, title, 
+                                loc, begin_time, end_time, creator_id, desc) :
+    prepared = handle.prepare("""
+        INSERT INTO events (event_id, title, location, begin_time, attending_userids, public, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """)
+    handle.execute(prepared, \
+            [event_id, title, loc, begin_time, [creator_id], is_public, desc])
+'''
+
 def insert_event_into_database(handle, event_id, title, 
                                 loc, begin_time, creator_id, is_public, desc) :
     prepared = handle.prepare("""
@@ -114,6 +130,17 @@ def insert_event_into_database(handle, event_id, title,
 def event_add_attendee(handle, event_id, user_id) :
     prepared = handle.prepare("""UPDATE events SET attending_userids = attending_userids + ? WHERE event_id = ?""")
     handle.execute(prepared, [set([user_id]), uuid.UUID(event_id)])
+
+def add_newsfeed_event_to_user(handle, user_id, host_id, location, title,
+        start_time, end_time, event_id, desc) :
+    print "HELLO"
+    prepared = handle.prepare("""
+        INSERT INTO social.newsfeed (user_id, event_id, begin_time, description,
+        end_time, host_id, location, title)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """)
+    handle.execute(prepared, [user_id, event_id, start_time, desc, end_time, \
+            host_id,location, title])
 
 def add_new_visible_event_to_user(handle, user_id, event_id, desc) :
     retrieved_id, attendees, start_time, desc, location, is_public, title = \
@@ -176,6 +203,32 @@ def accept_event_invitation(handle, user_id, event_id, desc) :
     handle.execute(prepared, [uuid.UUID(event_id), user_id])
 
     event_add_attendee(handle, event_id, user_id)
+
+def get_user_newsfeed(handle, userid) :
+    query = """SELECT user_id, event_id, begin_time, description, end_time, 
+        host_id, location, title
+    FROM social.newsfeed WHERE user_id = ?;"""
+    prepared = handle.prepare(query)
+    rows = handle.execute(prepared, [userid])
+    # userid, eventid, location, start-time, title
+    print "invited db layer"
+    print userid
+    print rows
+    d_list = []
+    for user_id, event_id, begin_time, description, end_time, host_id, \
+            location, title in rows :
+        d = dict()
+        d["user_id"] = user_id
+        d["event_id"] = str(event_id)
+        d["begin_time"] = begin_time
+        d["description"] = description
+        d["end_time"] = end_time
+        d["host_id"] = host_id
+        d["location"] = location
+        d["title"] = title
+        print d
+        d_list.append(d)
+    return d_list
 
 def get_user_events_invited(handle, userid) :
     query = """SELECT user_id, event_id, description, location, start_time, title 

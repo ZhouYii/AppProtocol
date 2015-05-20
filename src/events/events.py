@@ -8,6 +8,20 @@ import db.database as db
 from tools.util import unix_time_millis, to_json
 import uuid
 
+def create_event_public(handle, host_id, location, title, start_time,
+                 end_time, event_id, description) :
+
+    #db.insert_event_into_database_public(handle, event_id, title, location, 
+    #        time, host_id, is_public, description)
+    second_degree = db.db_second_deg_friends(handle, host_id)
+    second_degree = second_degree
+    for user_id in second_degree :
+        # change from visible
+        db.add_newsfeed_event_to_user(handle, user_id, host_id, location, title,
+                start_time, end_time, event_id, description)
+    return event_id
+
+
 def create_event(handle, host_id, location, title, time,
                  event_id, is_public, description, invite_list=[]) :
 
@@ -40,6 +54,10 @@ def event_accept(handle, invited_user, event_id) :
     db.accept_event_invitation(handle, invited_user, event_id, desc)
 
     # notify event creator
+
+def poll_newsfeed_events(handle, user_id, start_offset=0, amount=10) :
+    users_events = db.get_user_newsfeed(handle, user_id)
+    return users_events[start_offset:start_offset+amount]
 
 def poll_invited_events(handle, user_id, start_offset=0, amount=10) :
     users_events = db.get_user_events_invited(handle, user_id)

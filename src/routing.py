@@ -1,7 +1,7 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
 from db.database import *
-from tools.util import split_opcode, event_print_helper
+from tools.util import split_opcode, event_print_helper, public_event_print_helper
 
 import uuid
 
@@ -41,6 +41,7 @@ def perform_routing(server_handle, db_handle, data) :
                 server_handle.message("1")
         else :
             server_handle.message("0")
+
 
     elif opcode == "log" :
         dat = json.loads(str(message))
@@ -143,6 +144,27 @@ def perform_routing(server_handle, db_handle, data) :
             ev.event_invite(db_handle, dat["user_id"], dat["event_id"])
             server_handle.message(str(1))
 
+    elif opcode == "newPublicEvent" :
+        dat = json.loads(str(message))
+        # Check if json fields are present :
+        # host_id, location, start_time, end_time, title
+        if dat.has_key("host_id") and dat.has_key("location") and \
+            dat.has_key("title") and dat.has_key("start_time") and \
+            dat.has_key("description") and \
+            dat.has_key("event_id") and dat.has_key("end_time") :
+                host = int(dat["host_id"])
+                location = dat["location"]
+                title = dat["title"]
+                start_time = int(dat["start_time"])
+                end_time = int(dat["end_time"])
+                description = dat["description"]
+                event_uuid = uuid.UUID(dat["event_id"])
+
+                event_id = ev.create_event_public(db_handle, host, location,
+                                        title, start_time, end_time,
+                                        event_uuid, description)
+                server_handle.message(str(event_id))
+
     elif opcode == "newevent" :
         dat = json.loads(str(message))
         # Check if json fields are present :
@@ -170,6 +192,21 @@ def perform_routing(server_handle, db_handle, data) :
                                             title, time, event_uuid,
                                             public_visible, description)
                 server_handle.message(str(event_id))
+
+    elif opcode == "pollnewsfeed" :
+        dat = json.loads(str(message))
+        if dat.has_key("user_id") :
+            user_id = dat["user_id"]
+            if dat.has_key("start_offset") and dat.has_key("amount") :
+                events = ev.poll_newsfeed_events(db_handle, user_id,
+                                            dat["start_offset"], 
+                                            dat["amount"])
+            else :
+                events =  ev.poll_newsfeed_events(db_handle, user_id)
+            new_friends = \
+                    get_unseen_friend_accept_notification(handle, user_id)
+            response = public_event_print_helper(db_handle, events, new_friends)
+            server_handle.message(response)
 
     elif opcode == "pollinvited" :
         dat = json.loads(str(message))
@@ -287,8 +324,8 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "pollinvited:" + json_msg)
     '''
 
-    id1 = 111111111
-    id2 = 222222222
+    id1 = 11111111
+    id2 = 22222222
 
     msg = dict()
     msg["gender"] = "M"
@@ -308,12 +345,14 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "reg:"+json_msg)
 
+    '''
     msg = dict()
     msg["phone"] = id1
     msg["pass"] = "password"
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "log:"+json_msg)
+    '''
 
     '''
     msg = "getfriends:6505758649"
@@ -358,6 +397,30 @@ if __name__ == "__main__" :
     perform_routing(server, handle, "eventaccept:"+json_msg)
     '''
 
+    # new events - newsfeed
+    '''
+    event_id = str(uuid.uuid1())
+    msg=dict()
+    msg["event_id"] = event_id
+    msg["location"] = "newsfeed_event"
+    msg["host_id"] = id1
+    msg["description"] = "my newsfeed event"
+    msg["title"] = "newfeed event"
+    msg["start_time"] = TimestampMillisec64()
+    msg["end_time"] = TimestampMillisec64() + 10000
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    print "friend-of-friend " + str(db_second_deg_friends(handle, id1))
+    perform_routing(server, handle, "newPublicEvent:"+json_msg)
+    '''
+    msg = dict()
+    msg["user_id"] = id2
+    msg["start_offset"] = 0
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollnewsfeed:"+json_msg)
+    
     '''
     msg = dict()
     msg["user_id"] = id2
@@ -369,6 +432,7 @@ if __name__ == "__main__" :
     '''
 
     # testing friends
+    '''
     msg = dict()
     msg["src_user"] = id1
     msg["dst_user"] = id2
@@ -387,3 +451,4 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "pollinvited:"+json_msg)
     print get_unseen_friend_accept_notification(handle, id1)
+    '''
