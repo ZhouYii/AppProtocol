@@ -11,8 +11,8 @@ def init_session(keyspace="social") :
     ''' 
     Start a connection into cassandra database
     '''
-    #cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
-    cluster = Cluster()
+    cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
+    #cluster = Cluster()
     handle = cluster.connect("social")
     return handle
 
@@ -205,7 +205,7 @@ def accept_event_invitation(handle, user_id, event_id, desc) :
     event_add_attendee(handle, event_id, user_id)
 
 def get_user_newsfeed(handle, userid) :
-    query = """SELECT user_id, event_id, begin_time, description, end_time, 
+    query = """SELECT event_id, begin_time, description, end_time, 
         host_id, location, title
     FROM social.newsfeed WHERE user_id = ?;"""
     prepared = handle.prepare(query)
@@ -215,10 +215,9 @@ def get_user_newsfeed(handle, userid) :
     print userid
     print rows
     d_list = []
-    for user_id, event_id, begin_time, description, end_time, host_id, \
+    for event_id, begin_time, description, end_time, host_id, \
             location, title in rows :
         d = dict()
-        d["user_id"] = user_id
         d["event_id"] = str(event_id)
         d["begin_time"] = begin_time
         d["description"] = description
