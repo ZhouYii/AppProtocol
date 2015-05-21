@@ -205,7 +205,8 @@ def perform_routing(server_handle, db_handle, data) :
                 events =  ev.poll_newsfeed_events(db_handle, user_id)
             new_friends = \
                     get_unseen_friend_accept_notification(handle, user_id)
-            response = public_event_print_helper(db_handle, events, new_friends)
+            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
+            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
             server_handle.message(response)
 
     elif opcode == "pollinvited" :
@@ -224,7 +225,10 @@ def perform_routing(server_handle, db_handle, data) :
             print user_id
             new_friends = \
                     get_unseen_friend_accept_notification(handle, user_id)
-            server_handle.message(event_print_helper(db_handle, events, new_friends))
+
+            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
+            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
+            server_handle.message(response)
 
     elif opcode == "pollaccepted" :
         dat = json.loads(str(message))
@@ -236,7 +240,11 @@ def perform_routing(server_handle, db_handle, data) :
                                         dat["amount"])
             else :
                 events = ev.poll_accepted_events(db_handle, user_id)
-            server_handle.message(event_print_helper(db_handle, events))
+
+            new_friends = get_unseen_friend_accept_notification(handle, user_id)
+            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
+            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
+            server_handle.message(response)
 
     elif opcode == "newstatus" :
         '''
@@ -373,29 +381,41 @@ if __name__ == "__main__" :
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "profile:"+json_msg)
     '''
-    '''
     # test events
     event_id = str(uuid.uuid1())
     msg=dict()
     msg["event_id"] = event_id
-    msg["location"] = "test event location4"
+    msg["location"] = "my test event location "
     msg["host_id"] = id1
-    msg["description"] = "my description"
-    msg["title"] = "my event title4"
+    msg["description"] = "my test event description"
+    msg["title"] = "my test event title invited"
     msg["time"] = TimestampMillisec64()
     msg["invite_list"] = [id2]
     msg["public"] = False
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "newevent:"+json_msg)
-    
+
+    event_id = str(uuid.uuid1())
+    msg=dict()
+    msg["event_id"] = event_id
+    msg["location"] = "my test event location "
+    msg["host_id"] = id1
+    msg["description"] = "my test event description"
+    msg["title"] = "my test event title accepted"
+    msg["time"] = TimestampMillisec64()
+    msg["invite_list"] = [id2]
+    msg["public"] = False
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "newevent:"+json_msg)
+
     msg=dict()
     msg["event_id"] = event_id
     msg["user_id"] = id2
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "eventaccept:"+json_msg)
-    '''
 
     # new events - newsfeed
     '''
@@ -413,6 +433,8 @@ if __name__ == "__main__" :
     print "friend-of-friend " + str(db_second_deg_friends(handle, id1))
     perform_routing(server, handle, "newPublicEvent:"+json_msg)
     '''
+
+    # poll newsfeed
     msg = dict()
     msg["user_id"] = id2
     msg["start_offset"] = 0
@@ -420,7 +442,24 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "pollnewsfeed:"+json_msg)
-    
+
+
+    msg = dict()
+    msg["user_id"] = id1
+    msg["start_offset"] = 0
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollnewsfeed:"+json_msg)
+
+    msg = dict()
+    msg["user_id"] = id1
+    msg["start_offset"] = 0
+    msg["amount"] = 10
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    print "json msg: " + str(json_msg)
+    perform_routing(server, handle, "pollnewsfeed:"+json_msg)
+
     '''
     msg = dict()
     msg["user_id"] = id2

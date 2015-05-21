@@ -31,6 +31,7 @@ def create_event(handle, host_id, location, title, time,
             time, host_id, is_public, description)
 
     for user_id in invite_list :
+        # Distributed the invitations to the invited users
         db.add_new_visible_event_to_user(handle, user_id, event_id, description)
 
     if is_public :
@@ -41,7 +42,7 @@ def create_event(handle, host_id, location, title, time,
     return event_id
 
 def event_invite(handle, invitee, event_id) :
-    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+    retrieved_id, attendees, start_time, desc, location, is_public, title, host_id = \
             db.get_event_details(handle, event_id)
     db.add_new_visible_event_to_user(handle, invitee, event_id, desc)
 
@@ -49,9 +50,10 @@ def event_reject(handle, invitee, event_id) :
     db.reject_event_invitation(handle, invitee, event_id)
 
 def event_accept(handle, invited_user, event_id) :
-    retrieved_id, attendees, start_time, desc, location, is_public, title = \
+    retrieved_id, attendees, start_time, desc, location, is_public, title, host_id = \
             db.get_event_details(handle, event_id)
     db.accept_event_invitation(handle, invited_user, event_id, desc)
+    db.add_accept_event_notification(handle, host_id, invited_user, title)
 
     # notify event creator
 
