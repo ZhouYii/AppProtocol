@@ -37,6 +37,7 @@ def db_accept_friend_request(handle, accepting_user, requesting_user) :
     rows = handle.execute(prepared, [accepting_user, requesting_user])
 
     # check if request exists
+    print rows
     if len(rows) > 0 :
         # remove request
         prepared = handle.prepare("""
@@ -79,10 +80,8 @@ def get_unseen_event_invite_notification(handle, event_host) :
         select attending_userid, event_title, host_userid from accepted_event_invitation 
         where seen=False and host_userid = ?;""")
     rows = handle.execute(prepared, [event_host])
-    print "newfriends"
     notifications = [(list(r)[0], list(r)[1]) for r in rows]
     triples = [(list(r)[0], list(r)[1], list(r)[2]) for r in rows]
-    print notifications
 
     # Mark as seen
     for attending_id, title, host_id in triples :
@@ -95,9 +94,7 @@ def get_unseen_friend_accept_notification(handle, request_creation_user) :
         select accepting_user from accepted_friend_requests 
         where seen=False and request_creation_user = ?;""")
     rows = handle.execute(prepared, [request_creation_user])
-    print "newfriends"
     new_friends = [list(r)[0] for r in rows]
-    print new_friends
 
     # Mark as seen
     for friend_id in new_friends :
@@ -187,7 +184,6 @@ def get_event_details(handle, event_id) :
     if len(rows) == 0 :
         return None
     event = rows[0]
-    print "GET EVENT DETAILS: " + str(event)
     ## ID, Attendees, begin time, location, title
     # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
     return (event[0], event[1], event[2], event[3], event[4], event[5], event[6], event[7])
@@ -239,9 +235,6 @@ def get_user_newsfeed(handle, userid) :
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
     # userid, eventid, location, start-time, title
-    print "invited db layer"
-    print userid
-    print rows
     d_list = []
     for event_id, begin_time, description, end_time, host_id, \
             location, title in rows :
@@ -253,7 +246,6 @@ def get_user_newsfeed(handle, userid) :
         d["host_id"] = host_id
         d["location"] = location
         d["title"] = title
-        print d
         d_list.append(d)
     return d_list
 
@@ -263,9 +255,7 @@ def get_user_events_invited(handle, userid) :
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
     # userid, eventid, location, start-time, title
-    print "invited db layer"
-    print rows
-    return [(r[0], r[1], r[2], r[3], r[4], r[5]) for r in rows]
+    return [(r[0], str(r[1]), r[2], r[3], r[4], r[5]) for r in rows]
 
 def get_user_events_accepted(handle, userid) :
     query = """SELECT user_id, event_id, description, location, start_time, title 
@@ -274,10 +264,7 @@ def get_user_events_accepted(handle, userid) :
     rows = handle.execute(prepared, [userid])
     # build event tuple
     # userid, eventid, location, start-time, title
-    print "accepted db layer"
-    print rows
-    [(r[0], r[1], r[2], r[3], r[4]) for r in rows]
-    return [(r[0], r[1], r[2], r[3], r[4], r[5]) for r in rows]
+    return [(r[0], str(r[1]), r[2], r[3], r[4], r[5]) for r in rows]
 
 '''
 Add a new user
@@ -423,7 +410,6 @@ if __name__ == "__main__" :
     from uuid import uuid4
     handle = init_session()
     #import newsfeed.newsfeed as nf
-    #print db_newsfeed_get_user_newsfeed(handle, 6505758649)
     uuid_str = uuid.uuid1()
     time_start = TimestampMillisec64()
 

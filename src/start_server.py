@@ -27,7 +27,10 @@ class IphoneChat(Protocol):
         self.message("-1")
 
     def dataReceived(self, data):
+      try :
         perform_routing(self, self.db_handle, data)
+      except Exception :
+        self.message("Incorrect Input Error")
 
 factory = Factory()
 factory.protocol = IphoneChat
