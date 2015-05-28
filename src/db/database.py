@@ -11,8 +11,8 @@ def init_session(keyspace="social") :
     ''' 
     Start a connection into cassandra database
     '''
-    # cluster = Cluster(["ec2-54-69-204-42.us-west-2.compute.amazonaws.com"])
-    cluster = Cluster()
+    cluster = Cluster(["ec2-52-69-23-190.ap-northeast-1.compute.amazonaws.com"])
+    #cluster = Cluster()
     handle = cluster.connect("social")
     return handle
 
