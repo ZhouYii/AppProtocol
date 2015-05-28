@@ -110,6 +110,13 @@ def perform_routing(server_handle, db_handle, data) :
         json_msg = json.dumps(ret_msg, separators=(',',':'))
         server_handle.message(json_msg)
 
+    elif opcode == "seekuser" :
+        # rey with list of nickname, phone_num, message
+        user_id = int(message)
+        ret_msg = get_user_information(db_handle, user_id)
+        json_msg = json.dumps(ret_msg, separators=(',',':'))
+        server_handle.message(json_msg)
+
     elif opcode == "acceptfriend" :
         id1, id2 = message.split("#")
         db_accept_friend_request(db_handle, int(id1), int(id2))
