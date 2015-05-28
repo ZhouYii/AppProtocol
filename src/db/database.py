@@ -403,6 +403,24 @@ def user_profile_update_password(handle, phone_num, password) :
     prepared = handle.prepare(query)
     handle.execute(prepared, [password, phone_num])
 
+def get_user_information(handle, phone_num) :
+    prepared = """
+        SELECT email, introduction, is_male, location, nickname \
+        FROM social.user WHERE phone_number  = """ + str(phone_num) + ";"
+    rows = handle.execute(prepared)
+    if len(rows) == 0 :
+        return dict()
+    event = rows[0]
+    ## ID, Attendees, begin time, location, title
+    # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
+    ret = dict()
+    ret["email"] = event[0]
+    ret["introduction"] = event[1]
+    ret["is_male"] = event[2]
+    ret["location"] = event[3]
+    ret["nickname"] = event[4]
+    return ret
+
 def TimestampMillisec64():
     return int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
 
