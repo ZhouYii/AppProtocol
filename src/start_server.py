@@ -19,6 +19,7 @@ class IphoneChat(Protocol):
         self.factory.clients.remove(self)
 
     def message(self, message):
+	print "Response: " + str(message)
         self.transport.write(str(message) + '\n')
 
     def message_phone_number_exists(self) :
@@ -27,10 +28,11 @@ class IphoneChat(Protocol):
         self.message("-1")
 
     def dataReceived(self, data):
-      try :
-        perform_routing(self, self.db_handle, data)
-      except Exception :
-        self.message("Incorrect Input Error")
+      #try :
+      print "Recieved from client : " + str(data)
+      perform_routing(self, self.db_handle, data)
+      #except Exception :
+      #  self.message("Incorrect Input Error")
 
 factory = Factory()
 factory.protocol = IphoneChat
