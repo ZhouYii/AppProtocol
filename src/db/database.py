@@ -273,15 +273,15 @@ gender -> true if male, false is female
 nickname -> string, for nickname
 password -> a hash
 '''
-def insert_user_into_database(handle, phone_number, gender, nickname, password) :
+def insert_user_into_database(handle, phone_number, gender, nickname, password, parseID) :
     '''
     Commit a user/password pair into the database
     ''' 
     prepared = handle.prepare("""
-        INSERT INTO social.user (phone_number, is_male, nickname, password)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO social.user (phone_number, is_male, nickname, password, profileParseID)
+        VALUES (?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [int(phone_number), bool(gender), str(nickname), str(password)])
+    handle.execute(prepared, [int(phone_number), bool(gender), str(nickname), str(password), str(parseID)])
 
 def check_phonenumber_taken(handle, phone_number) :
     '''
@@ -405,7 +405,7 @@ def user_profile_update_password(handle, phone_num, password) :
 
 def get_user_information(handle, phone_num) :
     prepared = """
-        SELECT email, introduction, is_male, location, nickname \
+        SELECT email, introduction, is_male, location, nickname, profileParseID \
         FROM social.user WHERE phone_number  = """ + str(phone_num) + ";"
     rows = handle.execute(prepared)
     if len(rows) == 0 :
@@ -419,6 +419,7 @@ def get_user_information(handle, phone_num) :
     ret["is_male"] = event[2]
     ret["location"] = event[3]
     ret["nickname"] = event[4]
+    ret["parseID"] = event[5]
     return ret
 
 def TimestampMillisec64():

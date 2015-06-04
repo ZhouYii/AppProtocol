@@ -17,8 +17,10 @@ def perform_routing(server_handle, db_handle, data) :
         #phone_num, password = split_login_string(message)
         dat = json.loads(str(message))
         if dat.has_key("gender") and dat.has_key("phone_num") \
-            and dat.has_key("nick") and dat.has_key("pass_hash") :
+            and dat.has_key("nick") and dat.has_key("pass_hash") \
+	    and dat.has_key("parseID") :
                 phone_num = dat["phone_num"]
+                parse_id = dat["parseID"]
                 password = dat["pass_hash"]
                 if dat["gender"] == "M" :
                     gender = True
@@ -36,7 +38,8 @@ def perform_routing(server_handle, db_handle, data) :
                                           phone_num,
                                           gender,
                                           nick,
-                                          password)
+                                          password,
+                                          parse_id)
                 server_handle.message("1")
         else :
             server_handle.message("0")
@@ -342,6 +345,7 @@ if __name__ == "__main__" :
     msg["phone_num"] = id1
     msg["nick"] = "ZhouYi2"
     msg["pass_hash"] = "password"
+    msg["parseID"] = "mytestparseID"
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "reg:"+json_msg)
 
@@ -350,6 +354,7 @@ if __name__ == "__main__" :
     msg["phone_num"] = id2
     msg["nick"] = "ZhouYi2"
     msg["pass_hash"] = "password"
+    msg["parseID"] = "mytestparseID"
     json_msg = json_.dumps(msg, separators=(',',':'))
     perform_routing(server, handle, "reg:"+json_msg)
 
@@ -526,6 +531,10 @@ if __name__ == "__main__" :
     json_msg = json_.dumps(msg, separators=(',',':'))
     print "json msg: " + str(json_msg)
     perform_routing(server, handle, "pollnewsfeed:"+json_msg)
+
+    print "****"
+    print "**** SeekUser test"
+    perform_routing(server, handle, "seekuser:"+str(id1))
 
     '''
     msg = dict()
