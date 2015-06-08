@@ -281,7 +281,7 @@ def insert_user_into_database(handle, phone_number, gender, nickname, password, 
         INSERT INTO social.user (phone_number, is_male, nickname, password, profileParseID)
         VALUES (?, ?, ?, ?, ?)
         """)
-    handle.execute(prepared, [int(phone_number), bool(gender), str(nickname), str(password), str(parseID)])
+    handle.execute(prepared, [int(phone_number), bool(gender), nickname, str(password), str(parseID)])
 
 def check_phonenumber_taken(handle, phone_number) :
     '''

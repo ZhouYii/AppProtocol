@@ -10,6 +10,7 @@ import events.events as ev
 def perform_routing(server_handle, db_handle, data) :
     import json
     opcode, message = split_opcode(data)
+    print "logging encoding start"
     print "opcode " + str(opcode) + " msg: " + str(message)
 
     if opcode == "reg" :
@@ -47,6 +48,7 @@ def perform_routing(server_handle, db_handle, data) :
 
     elif opcode == "log" :
         dat = json.loads(str(message))
+        print dat
         if dat.has_key("phone") and dat.has_key("pass") :
             phone_num = int(dat["phone"])
             password = dat["pass"]
