@@ -108,16 +108,12 @@ def send_push_notification(message,
 # for polling event list, a list of event tuples are retrieved frm the database
 # # userid, eventid, location, start-time, title
 # Creates the json string for server to send
-def public_event_print_helper(handle, listof_event_dicts, 
-                                      new_friends_list,
-                                      new_invite_list) :
+def public_event_print_helper(handle, listof_event_dicts) :
     d = dict()
     d["events"] = listof_event_dicts
-    d["new_friends"] = new_friends_list
-    d["accepted_invite"] = new_invite_list
     return json.dumps(d, separators=(',',':'))
  
-def event_print_helper(handle, event_tuples, new_friends_list, new_invite_list) :
+def event_print_helper(handle, event_tuples) :
     def event_to_dict(handle, event_tuple) :
         user_id, event_id, desc, loc, time, title = event_tuple
         d = dict()
@@ -143,8 +139,6 @@ def event_print_helper(handle, event_tuples, new_friends_list, new_invite_list) 
     event_dicts = [event_to_dict(handle, t) for t in event_tuples]
     d = dict()
     d["events"] = event_dicts
-    d["new_friends"] = new_friends_list
-    d["accepted_invite"] = new_invite_list
     return json.dumps(d, separators=(',',':'))
 
 if __name__ == '__main__' :

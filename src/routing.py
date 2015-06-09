@@ -213,10 +213,10 @@ def perform_routing(server_handle, db_handle, data) :
                                             dat["amount"])
             else :
                 events =  ev.poll_newsfeed_events(db_handle, user_id)
-            new_friends = \
-                    get_unseen_friend_accept_notification(handle, user_id)
-            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
-            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
+            #new_friends = \
+            #        get_unseen_friend_accept_notification(handle, user_id)
+            #new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
+            response = public_event_print_helper(db_handle, events)
             server_handle.message(response)
 
     elif opcode == "pollinvited" :
@@ -229,12 +229,24 @@ def perform_routing(server_handle, db_handle, data) :
                                         dat["amount"])
             else :
                 events =  ev.poll_invited_events(db_handle, user_id)
-            new_friends = \
-                    get_unseen_friend_accept_notification(handle, user_id)
-
-            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
-            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
+            response = public_event_print_helper(db_handle, events)
             server_handle.message(response)
+
+    elif opcode == "friendAcceptNotification" :
+        user_id = int(message)
+        new_friends = get_unseen_friend_accept_notification(handle, user_id)
+        d = dict()
+        d["notifications"] = new_friends
+        json_msg = json.dumps(d,  separators=(',',':'))
+        server_handle.message(json_msg)
+
+    elif opcode == "eventAcceptNotification" :
+        user_id = int(message)
+        new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
+        d = dict()
+        d["notifications"] = new_friends
+        json_msg = json.dumps(d,  separators=(',',':'))
+        server_handle.message(json_msg)
 
     elif opcode == "pollaccepted" :
         dat = json.loads(str(message))
@@ -247,9 +259,7 @@ def perform_routing(server_handle, db_handle, data) :
             else :
                 events = ev.poll_accepted_events(db_handle, user_id)
 
-            new_friends = get_unseen_friend_accept_notification(handle, user_id)
-            new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
-            response = public_event_print_helper(db_handle, events, new_friends, new_invite_accept)
+            response = public_event_print_helper(db_handle, events)
             server_handle.message(response)
 
     elif opcode == "newstatus" :
@@ -537,6 +547,16 @@ if __name__ == "__main__" :
     print "****"
     print "**** SeekUser test"
     perform_routing(server, handle, "seekuser:"+str(id1))
+
+    print "****"
+    print "**** Event Notification test"
+    perform_routing(server, handle, "eventAcceptNotification:"+str(id1))
+    perform_routing(server, handle, "eventAcceptNotification:"+str(id2))
+
+    print "****"
+    print "**** Friend Notification test"
+    perform_routing(server, handle, "friendAcceptNotification:"+str(id1))
+    perform_routing(server, handle, "friendAcceptNotification:"+str(id2))
 
     '''
     msg = dict()
