@@ -557,6 +557,7 @@ if __name__ == "__main__" :
     print "**** Friend Notification test"
     perform_routing(server, handle, "friendAcceptNotification:"+str(id1))
     perform_routing(server, handle, "friendAcceptNotification:"+str(id2))
+    perform_routing(server, handle, "friendAcceptNotification:"+str(6505758649))
 
     '''
     msg = dict()
