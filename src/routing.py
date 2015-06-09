@@ -244,7 +244,7 @@ def perform_routing(server_handle, db_handle, data) :
         user_id = int(message)
         new_invite_accept = get_unseen_event_invite_notification(db_handle, user_id)
         d = dict()
-        d["notifications"] = new_friends
+        d["notifications"] = new_invite_accept
         json_msg = json.dumps(d,  separators=(',',':'))
         server_handle.message(json_msg)
 
