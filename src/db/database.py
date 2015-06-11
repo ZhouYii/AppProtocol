@@ -273,9 +273,21 @@ def get_user_events_accepted(handle, userid) :
     FROM accepted_events WHERE user_id = ?;"""
     prepared = handle.prepare(query)
     rows = handle.execute(prepared, [userid])
+
+    items = []
+    for user_id, event_id, description, location, start_time, title in rows :
+        d = dict()
+        d["event_id"] = str(event_id)
+        d["begin_time"] = start_time
+        d["description"] = description
+        d["location"] = location
+        d["title"] = title
+        d["user_id"] = user_id
+        items.append(d)
     # build event tuple
     # userid, eventid, location, start-time, title
-    return [(r[0], str(r[1]), r[2], r[3], r[4], r[5]) for r in rows]
+    return items
+    #return [(r[0], str(r[1]), r[2], r[3], r[4], r[5]) for r in rows]
 
 '''
 Add a new user
