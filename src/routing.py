@@ -191,6 +191,9 @@ def perform_routing(server_handle, db_handle, data) :
                 event_uuid = uuid.UUID(dat["event_id"])
                 public_visible = bool(dat["public"])
 
+                print "invite event data"
+                print dat
+
                 if dat.has_key("invite_list") :
                     invite_list = dat["invite_list"]
                     invite_list = [int(invited_user) for invited_user in invite_list]

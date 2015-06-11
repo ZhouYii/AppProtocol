@@ -420,6 +420,7 @@ def get_user_information(handle, phone_num) :
     ret["location"] = event[3]
     ret["nickname"] = event[4]
     ret["parseID"] = event[5]
+    ret["user_id"] = phone_num
     return ret
 
 def TimestampMillisec64():
