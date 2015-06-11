@@ -191,6 +191,9 @@ def perform_routing(server_handle, db_handle, data) :
                 event_uuid = uuid.UUID(dat["event_id"])
                 public_visible = bool(dat["public"])
 
+                print "invite event data"
+                print dat
+
                 if dat.has_key("invite_list") :
                     invite_list = dat["invite_list"]
                     invite_list = [int(invited_user) for invited_user in invite_list]
@@ -206,11 +209,11 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "pollnewsfeed" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") :
-            user_id = dat["user_id"]
+            user_id = int(dat["user_id"])
             if dat.has_key("start_offset") and dat.has_key("amount") :
                 events = ev.poll_newsfeed_events(db_handle, user_id,
-                                            dat["start_offset"], 
-                                            dat["amount"])
+                                            int(dat["start_offset"]), 
+                                            int(dat["amount"]))
             else :
                 events =  ev.poll_newsfeed_events(db_handle, user_id)
             #new_friends = \
@@ -222,11 +225,11 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "pollinvited" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") :
-            user_id = dat["user_id"]
+            user_id = int(dat["user_id"])
             if dat.has_key("start_offset") and dat.has_key("amount") :
                 events = ev.poll_invited_events(db_handle, user_id,
-                                        dat["start_offset"], 
-                                        dat["amount"])
+                                        int(dat["start_offset"]), 
+                                        int(dat["amount"]))
             else :
                 events =  ev.poll_invited_events(db_handle, user_id)
             response = public_event_print_helper(db_handle, events)
@@ -234,7 +237,7 @@ def perform_routing(server_handle, db_handle, data) :
 
     elif opcode == "friendAcceptNotification" :
         user_id = int(message)
-        new_friends = get_unseen_friend_accept_notification(handle, user_id)
+        new_friends = get_unseen_friend_accept_notification(db_handle, user_id)
         d = dict()
         d["notifications"] = new_friends
         json_msg = json.dumps(d,  separators=(',',':'))
@@ -251,11 +254,11 @@ def perform_routing(server_handle, db_handle, data) :
     elif opcode == "pollaccepted" :
         dat = json.loads(str(message))
         if dat.has_key("user_id") :
-            user_id = dat["user_id"]
+            user_id = int(dat["user_id"])
             if dat.has_key("start_offset") and dat.has_key("amount") :
                 events = ev.poll_accepted_events(db_handle, user_id,
-                                        dat["start_offset"], 
-                                        dat["amount"])
+                                        int(dat["start_offset"]), 
+                                        int(dat["amount"]))
             else :
                 events = ev.poll_accepted_events(db_handle, user_id)
 
