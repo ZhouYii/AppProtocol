@@ -188,6 +188,28 @@ def get_event_details(handle, event_id) :
     # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
     return (event[0], event[1], event[2], event[3], event[4], event[5], event[6], event[7])
 
+# Get the details of an event in a dictionary form.
+def get_event_dictionary(handle, event_id) :
+    prepared = """
+        SELECT event_id, attending_userids, begin_time, description, location, public, title, host_id \
+        FROM social.invitation_events WHERE event_id = """ + str(event_id) + ";"
+    rows = handle.execute(prepared)
+    if len(rows) == 0 :
+        return dict()
+    event = rows[0]
+    ## ID, Attendees, begin time, location, title
+    # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
+    d = dict()
+    d["event_id"] = str(event[0])
+    d["attending_user_ids"] = event[1]
+    d["begin_time"] = event[2]
+    d["description"] = event[3]
+    d["location"] = event[4]
+    d["public"] = event[5]
+    d["title"] = event[6]
+    d["host_id"] = event[7]
+    return d
+    #return (event[0], event[1], event[2], event[3], event[4], event[5], event[6], event[7])
 
 # wrapper to provide seneible interface
 
@@ -256,6 +278,8 @@ def get_user_events_invited(handle, userid) :
     rows = handle.execute(prepared, [userid])
     items = []
     for user_id, event_id, description, location, start_time, title in rows :
+        d = get_event_dictionary(handle, event_id)
+        '''
         d = dict()
         d["event_id"] = str(event_id)
         d["begin_time"] = start_time
@@ -263,6 +287,7 @@ def get_user_events_invited(handle, userid) :
         d["location"] = location
         d["title"] = title
         d["user_id"] = user_id
+        '''
         items.append(d)
     # userid, eventid, location, start-time, title
     return items
@@ -276,6 +301,8 @@ def get_user_events_accepted(handle, userid) :
 
     items = []
     for user_id, event_id, description, location, start_time, title in rows :
+        d = get_event_dictionary(handle, event_id)
+        '''
         d = dict()
         d["event_id"] = str(event_id)
         d["begin_time"] = start_time
@@ -283,6 +310,7 @@ def get_user_events_accepted(handle, userid) :
         d["location"] = location
         d["title"] = title
         d["user_id"] = user_id
+        '''
         items.append(d)
     # build event tuple
     # userid, eventid, location, start-time, title
