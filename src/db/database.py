@@ -201,7 +201,7 @@ def get_event_dictionary(handle, event_id) :
     # UUID, Attendees, TIME, DESC, LOC, PUBLIC, TITLE
     d = dict()
     d["event_id"] = str(event[0])
-    d["attending_user_ids"] = event[1]
+    d["attending_user_ids"] = list(event[1])
     d["begin_time"] = event[2]
     d["description"] = event[3]
     d["location"] = event[4]
