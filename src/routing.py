@@ -569,7 +569,7 @@ if __name__ == "__main__" :
     msg=dict()
     msg["seekList"] = [6505758649, 1001, 7777]
     json_msg = json_.dumps(msg, separators=(',',':'))
-    perform_routing(server, handle, "multiseekuser:"+str(id1))
+    perform_routing(server, handle, "multiseekuser:"+json_msg)
 
     print "****"
     print "**** Event Notification test"
