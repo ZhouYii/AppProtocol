@@ -122,6 +122,19 @@ def perform_routing(server_handle, db_handle, data) :
         json_msg = json.dumps(ret_msg, separators=(',',':'))
         server_handle.message(json_msg)
 
+    elif opcode == "multiseekuser" :
+        dat = json.loads(str(message))
+        id_list = dat["seekList"]
+        id_list = [int(phone_num_string) for phone_num_string in id_list]
+        user_data_index = [(phone, get_user_information(db_handle, phone))
+                            for phone in id_list]
+        # Transform the list from the tuple form to a dictionary 
+        # indexed by phone numbers. The values of the dictionary are user data
+        # structures - see get_user_information
+        user_data_index = dict(user_data_index)
+        json_msg = json.dumps(ret_msg,  separators=(',',':'))
+        server_handle.message(json_msg)
+
     elif opcode == "acceptfriend" :
         id1, id2 = message.split("#")
         db_accept_friend_request(db_handle, int(id1), int(id2))
@@ -550,6 +563,13 @@ if __name__ == "__main__" :
     print "****"
     print "**** SeekUser test"
     perform_routing(server, handle, "seekuser:"+str(id1))
+
+    print "****"
+    print "**** Multi SeekUser test"
+    msg=dict()
+    msg["seekList"] = [6505758649, 1001, 7777]
+    json_msg = json_.dumps(msg, separators=(',',':'))
+    perform_routing(server, handle, "multiseekuser:"+str(id1))
 
     print "****"
     print "**** Event Notification test"
