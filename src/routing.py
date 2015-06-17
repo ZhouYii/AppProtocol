@@ -132,6 +132,8 @@ def perform_routing(server_handle, db_handle, data) :
         # indexed by phone numbers. The values of the dictionary are user data
         # structures - see get_user_information
         user_data_index = dict(user_data_index)
+        ret_msg = dict()
+        ret_msg["multiSeekDict"] = user_data_index
         json_msg = json.dumps(ret_msg,  separators=(',',':'))
         server_handle.message(json_msg)
 
